@@ -11,10 +11,16 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:cov": "vitest run --coverage"
+    "test:cov": "vitest run --coverage",
+    "db:seed": "prisma db seed",
+    "db:reset": "prisma migrate reset --force"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
     "dayjs": "^1.11.21",
     "decimal.js": "^10.6.0",
     "next": "^15.5.18",
@@ -34,6 +40,7 @@
     "prettier": "^3.8.3",
     "prisma": "^6.19.3",
     "tailwindcss": "^3.4.19",
+    "tsx": "^4.22.3",
     "typescript": "^5.9.3",
     "vitest": "^4.1.7",
     "vitest-mock-extended": "^4.0.0"
