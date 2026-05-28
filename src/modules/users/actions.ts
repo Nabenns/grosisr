@@ -43,7 +43,7 @@ export async function updateUserAction(input: unknown) {
         entity: "User",
         entityId: result.id,
         action: AuditAction.UPDATE,
-        before: before ? { ...before, passwordHash: "[REDACTED]" } as unknown as Record<string, unknown> : null,
+        before: before ? ({ ...before, passwordHash: "[REDACTED]" } as unknown as Record<string, unknown>) : null,
         after: { ...result, passwordHash: "[REDACTED]" } as unknown as Record<string, unknown>
       })
       return result
@@ -84,7 +84,7 @@ export async function deleteUserAction(id: string) {
         entity: "User",
         entityId: id,
         action: AuditAction.DELETE,
-        before: before ? { ...before, passwordHash: "[REDACTED]" } as unknown as Record<string, unknown> : null,
+        before: before ? ({ ...before, passwordHash: "[REDACTED]" } as unknown as Record<string, unknown>) : null,
         after: { ...result, passwordHash: "[REDACTED]" } as unknown as Record<string, unknown>
       })
     })

@@ -61,7 +61,13 @@ function LoginFormInner() {
 
 export function LoginForm() {
   return (
-    <Suspense fallback={<Card><CardContent className="p-6">Memuat...</CardContent></Card>}>
+    <Suspense
+      fallback={
+        <Card>
+          <CardContent className="p-6">Memuat...</CardContent>
+        </Card>
+      }
+    >
       <LoginFormInner />
     </Suspense>
   )

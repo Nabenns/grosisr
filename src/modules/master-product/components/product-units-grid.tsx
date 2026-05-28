@@ -29,14 +29,7 @@ interface Props {
   errors: FieldErrors<CreateProductInput>
 }
 
-export function ProductUnitsGrid({
-  control,
-  register,
-  setValue,
-  watch,
-  units,
-  errors
-}: Props) {
+export function ProductUnitsGrid({ control, register, setValue, watch, units, errors }: Props) {
   const { fields, append, remove } = useFieldArray({ control, name: "units" })
   const baseUnitId = watch("baseUnitId")
 
@@ -92,18 +85,10 @@ export function ProductUnitsGrid({
               <Input {...register(`units.${i}.barcode`)} placeholder="opsional" />
             </div>
             <div className="col-span-2">
-              <Input
-                type="number"
-                step="1"
-                {...register(`units.${i}.purchasePrice`, { valueAsNumber: true })}
-              />
+              <Input type="number" step="1" {...register(`units.${i}.purchasePrice`, { valueAsNumber: true })} />
             </div>
             <div className="col-span-2">
-              <Input
-                type="number"
-                step="1"
-                {...register(`units.${i}.salePrice`, { valueAsNumber: true })}
-              />
+              <Input type="number" step="1" {...register(`units.${i}.salePrice`, { valueAsNumber: true })} />
             </div>
             <div className="col-span-1 flex flex-col items-center gap-1">
               <label className="flex items-center gap-1 text-xs">

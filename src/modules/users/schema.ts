@@ -15,12 +15,10 @@ export const createUserSchema = z.object({
   warehouseIds: z.array(z.string().cuid())
 })
 
-export const updateUserSchema = createUserSchema
-  .omit({ password: true })
-  .extend({
-    id: z.string().cuid(),
-    isActive: z.boolean()
-  })
+export const updateUserSchema = createUserSchema.omit({ password: true }).extend({
+  id: z.string().cuid(),
+  isActive: z.boolean()
+})
 
 export const resetPasswordSchema = z.object({
   id: z.string().cuid(),

@@ -15,15 +15,7 @@ export const PERMISSION_MODULES = {
     "transfer.receive",
     "opname.run"
   ],
-  purchase: [
-    "po.read",
-    "po.write",
-    "invoice.read",
-    "invoice.write",
-    "invoice.post",
-    "invoice.void",
-    "return.write"
-  ],
+  purchase: ["po.read", "po.write", "invoice.read", "invoice.write", "invoice.post", "invoice.void", "return.write"],
   sale: [
     "read",
     "write",
@@ -104,9 +96,7 @@ export function expandRolePatterns(patterns: string[] | "*", allKeys: string[]):
       allKeys.forEach((k) => result.add(k))
     } else if (p.endsWith(".*")) {
       const prefix = p.slice(0, -2)
-      allKeys
-        .filter((k) => k === prefix || k.startsWith(`${prefix}.`))
-        .forEach((k) => result.add(k))
+      allKeys.filter((k) => k === prefix || k.startsWith(`${prefix}.`)).forEach((k) => result.add(k))
     } else if (p.startsWith("*.")) {
       const suffix = p.slice(2)
       allKeys.filter((k) => k.endsWith(`.${suffix}`)).forEach((k) => result.add(k))

@@ -41,7 +41,12 @@ interface InitialUser {
 // Combined form schema covers both create and edit; we conditionally validate password.
 const formSchema = z.object({
   id: z.string().cuid().optional(),
-  username: z.string().trim().min(3).max(50).regex(/^[a-zA-Z0-9_-]+$/, "Hanya huruf, angka, _, -"),
+  username: z
+    .string()
+    .trim()
+    .min(3)
+    .max(50)
+    .regex(/^[a-zA-Z0-9_-]+$/, "Hanya huruf, angka, _, -"),
   email: z.string().email().nullable().optional(),
   name: z.string().trim().min(1).max(100),
   password: z.string().optional(),
@@ -156,9 +161,7 @@ export function UserForm({ roles, warehouses, initial }: Props) {
           <div className="space-y-2">
             <Label htmlFor="username">Username *</Label>
             <Input id="username" {...register("username")} />
-            {errors.username && (
-              <p className="text-sm text-destructive">{errors.username.message}</p>
-            )}
+            {errors.username && <p className="text-sm text-destructive">{errors.username.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="name">Nama *</Label>
@@ -174,18 +177,14 @@ export function UserForm({ roles, warehouses, initial }: Props) {
             <div className="space-y-2">
               <Label htmlFor="password">Password *</Label>
               <Input id="password" type="password" {...register("password")} />
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
-              )}
+              {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
             </div>
           )}
           <div className="space-y-2">
             <Label>Default Gudang</Label>
             <Select
               value={watch("defaultWarehouseId") ?? "_none"}
-              onValueChange={(v) =>
-                setValue("defaultWarehouseId", v === "_none" ? null : v)
-              }
+              onValueChange={(v) => setValue("defaultWarehouseId", v === "_none" ? null : v)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="(Tidak ada)" />
@@ -202,10 +201,7 @@ export function UserForm({ roles, warehouses, initial }: Props) {
           </div>
           {isEdit && (
             <div className="flex items-center gap-3">
-              <Switch
-                checked={watch("isActive")}
-                onCheckedChange={(v) => setValue("isActive", v)}
-              />
+              <Switch checked={watch("isActive")} onCheckedChange={(v) => setValue("isActive", v)} />
               <Label>Aktif</Label>
             </div>
           )}
@@ -237,16 +233,12 @@ export function UserForm({ roles, warehouses, initial }: Props) {
                       />
                       <div>
                         <div className="font-medium text-sm">{r.name}</div>
-                        {r.description && (
-                          <div className="text-xs text-muted-foreground">{r.description}</div>
-                        )}
+                        {r.description && <div className="text-xs text-muted-foreground">{r.description}</div>}
                       </div>
                     </label>
                   )
                 })}
-                {errors.roleIds && (
-                  <p className="text-sm text-destructive">{errors.roleIds.message}</p>
-                )}
+                {errors.roleIds && <p className="text-sm text-destructive">{errors.roleIds.message}</p>}
               </div>
             )}
           />

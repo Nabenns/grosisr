@@ -10,10 +10,7 @@ import { createProductSchema, updateProductSchema } from "./schema"
 import { createProduct, updateProduct, softDeleteProduct } from "./service"
 
 function hasHetOverride(session: { user: { permissionKeys: string[]; roleNames: string[] } }) {
-  return (
-    session.user.permissionKeys.includes("sale.het_override") ||
-    session.user.roleNames.includes("OWNER")
-  )
+  return session.user.permissionKeys.includes("sale.het_override") || session.user.roleNames.includes("OWNER")
 }
 
 export async function createProductAction(input: unknown) {

@@ -33,7 +33,8 @@ export function GeneralForm({ allowNegativeStock }: { allowNegativeStock: boolea
           <div className="space-y-1">
             <Label className="text-sm font-medium">Izinkan stok negatif</Label>
             <p className="text-xs text-muted-foreground">
-              Jika diaktifkan, sistem mengizinkan posting transaksi yang membuat saldo stok jadi negatif. Default: tidak.
+              Jika diaktifkan, sistem mengizinkan posting transaksi yang membuat saldo stok jadi negatif. Default:
+              tidak.
             </p>
           </div>
           <Switch checked={allow} onCheckedChange={setAllow} />

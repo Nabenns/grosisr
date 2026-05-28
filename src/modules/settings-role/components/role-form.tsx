@@ -67,9 +67,7 @@ export function RoleForm({ permissions, initial }: Props) {
 
   function onSubmit(values: CreateRoleInput) {
     start(async () => {
-      const result = initial
-        ? await updateRoleAction({ ...values, id: initial.id })
-        : await createRoleAction(values)
+      const result = initial ? await updateRoleAction({ ...values, id: initial.id }) : await createRoleAction(values)
       if (!result.success) {
         toast.error(result.error.message)
         return
@@ -104,11 +102,7 @@ export function RoleForm({ permissions, initial }: Props) {
           <CardTitle>Permissions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input
-            placeholder="Cari permission..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <Input placeholder="Cari permission..." value={search} onChange={(e) => setSearch(e.target.value)} />
           <Controller
             control={control}
             name="permissionKeys"

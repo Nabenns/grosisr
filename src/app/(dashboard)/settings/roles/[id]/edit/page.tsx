@@ -9,10 +9,7 @@ export default async function EditRolePage({ params }: { params: Promise<{ id: s
   if (!session?.user) redirect("/login")
   if (!session.user.permissionKeys.includes("role.write")) redirect("/forbidden")
   const { id } = await params
-  const [role, permissions] = await Promise.all([
-    getRoleWithPermissions(id),
-    listAllPermissions()
-  ])
+  const [role, permissions] = await Promise.all([getRoleWithPermissions(id), listAllPermissions()])
   if (!role) notFound()
   return (
     <div>

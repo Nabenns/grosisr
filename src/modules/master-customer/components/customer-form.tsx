@@ -96,12 +96,7 @@ export function CustomerForm({ initial }: Props) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="creditLimit">Limit Kredit (Rp)</Label>
-          <Input
-            id="creditLimit"
-            type="number"
-            min="0"
-            {...register("creditLimit", { valueAsNumber: true })}
-          />
+          <Input id="creditLimit" type="number" min="0" {...register("creditLimit", { valueAsNumber: true })} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="termOfPaymentDays">Termin (hari)</Label>

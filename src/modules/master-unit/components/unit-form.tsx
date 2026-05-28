@@ -29,9 +29,7 @@ export function UnitForm({ initial }: Props) {
 
   function onSubmit(values: CreateUnitInput) {
     start(async () => {
-      const result = initial
-        ? await updateUnitAction({ ...values, id: initial.id })
-        : await createUnitAction(values)
+      const result = initial ? await updateUnitAction({ ...values, id: initial.id }) : await createUnitAction(values)
       if (!result.success) {
         toast.error(result.error.message)
         return

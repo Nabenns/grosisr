@@ -17,10 +17,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const cookieStore = await cookies()
   const currentWarehouseId =
-    cookieStore.get("current_warehouse")?.value ??
-    session.user.defaultWarehouseId ??
-    userWarehouses[0]?.id ??
-    null
+    cookieStore.get("current_warehouse")?.value ?? session.user.defaultWarehouseId ?? userWarehouses[0]?.id ?? null
 
   return (
     <div className="flex">

@@ -29,9 +29,7 @@ export function BrandForm({ initial }: Props) {
 
   function onSubmit(values: CreateBrandInput) {
     start(async () => {
-      const result = initial
-        ? await updateBrandAction({ ...values, id: initial.id })
-        : await createBrandAction(values)
+      const result = initial ? await updateBrandAction({ ...values, id: initial.id }) : await createBrandAction(values)
       if (!result.success) {
         toast.error(result.error.message)
         return

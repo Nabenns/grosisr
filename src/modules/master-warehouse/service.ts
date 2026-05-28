@@ -47,10 +47,7 @@ export async function softDeleteWarehouse(db: Db, id: string) {
     where: { warehouseId: id, qtyInBase: { not: 0 } }
   })
   if (stockNonZero > 0) {
-    throw new AppError(
-      "INVALID_INPUT",
-      "Gudang masih ada stok > 0, opname/transfer dulu ke 0"
-    )
+    throw new AppError("INVALID_INPUT", "Gudang masih ada stok > 0, opname/transfer dulu ke 0")
   }
   return db.warehouse.update({
     where: { id },

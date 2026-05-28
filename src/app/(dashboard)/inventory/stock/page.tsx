@@ -31,10 +31,7 @@ export default async function StockPage({
   const sp = await searchParams
   const cookieStore = await cookies()
   const currentWarehouseId =
-    sp.warehouseId ??
-    cookieStore.get("current_warehouse")?.value ??
-    session.user.defaultWarehouseId ??
-    undefined
+    sp.warehouseId ?? cookieStore.get("current_warehouse")?.value ?? session.user.defaultWarehouseId ?? undefined
 
   const page = Number(sp.page ?? "1")
   const { items, total, pageSize } = await listStockBalances({
@@ -72,12 +69,7 @@ export default async function StockPage({
     {
       id: "status",
       header: "Status",
-      cell: ({ row }) =>
-        row.original.belowMin ? (
-          <span className="text-destructive">Di bawah min</span>
-        ) : (
-          "OK"
-        )
+      cell: ({ row }) => (row.original.belowMin ? <span className="text-destructive">Di bawah min</span> : "OK")
     }
   ]
 

@@ -28,11 +28,7 @@ export function validateHetCompliance(
   }
 }
 
-async function ensureBarcodeUnique(
-  db: Db,
-  barcodes: (string | null | undefined)[],
-  excludeProductId?: string
-) {
+async function ensureBarcodeUnique(db: Db, barcodes: (string | null | undefined)[], excludeProductId?: string) {
   const list = barcodes.filter((b): b is string => !!b && b.length > 0)
   if (list.length === 0) return
   const dup = await db.productUnit.findFirst({
@@ -43,18 +39,11 @@ async function ensureBarcodeUnique(
     include: { product: { select: { name: true, sku: true } } }
   })
   if (dup) {
-    throw new AppError(
-      "INVALID_INPUT",
-      `Barcode ${dup.barcode} sudah dipakai produk ${dup.product.name}`
-    )
+    throw new AppError("INVALID_INPUT", `Barcode ${dup.barcode} sudah dipakai produk ${dup.product.name}`)
   }
 }
 
-export async function createProduct(
-  db: Db,
-  input: CreateProductInput,
-  opts: { allowHetOverride: boolean }
-) {
+export async function createProduct(db: Db, input: CreateProductInput, opts: { allowHetOverride: boolean }) {
   validateHetCompliance(input, opts.allowHetOverride)
 
   const dupSku = await db.product.findFirst({
@@ -96,21 +85,14 @@ export async function createProduct(
   })
 }
 
-export async function updateProduct(
-  db: Db,
-  input: UpdateProductInput,
-  opts: { allowHetOverride: boolean }
-) {
+export async function updateProduct(db: Db, input: UpdateProductInput, opts: { allowHetOverride: boolean }) {
   const current = await db.product.findUnique({
     where: { id: input.id },
     include: { units: true }
   })
   if (!current || current.deletedAt) throw new AppError("NOT_FOUND", "Produk tidak ditemukan")
   if (current.version !== input.version) {
-    throw new AppError(
-      "CONFLICT_VERSION",
-      "Data sudah diubah orang lain, refresh dan coba lagi"
-    )
+    throw new AppError("CONFLICT_VERSION", "Data sudah diubah orang lain, refresh dan coba lagi")
   }
 
   validateHetCompliance(input, opts.allowHetOverride)

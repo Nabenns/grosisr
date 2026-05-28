@@ -14,10 +14,7 @@ export async function listStockBalances(params: StockListParams) {
   if (warehouseId) where.warehouseId = warehouseId
   if (q) {
     where.product = {
-      OR: [
-        { name: { contains: q, mode: "insensitive" } },
-        { sku: { contains: q, mode: "insensitive" } }
-      ]
+      OR: [{ name: { contains: q, mode: "insensitive" } }, { sku: { contains: q, mode: "insensitive" } }]
     }
   }
   const [items, total] = await Promise.all([
@@ -44,9 +41,7 @@ export async function listStockBalances(params: StockListParams) {
   ])
   let filtered = items
   if (belowMinOnly) {
-    filtered = items.filter(
-      (s) => Number(s.qtyInBase) < (s.minStock ?? s.product.minStock)
-    )
+    filtered = items.filter((s) => Number(s.qtyInBase) < (s.minStock ?? s.product.minStock))
   }
   return { items: filtered, total, page, pageSize }
 }

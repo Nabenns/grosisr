@@ -15,11 +15,7 @@ interface Row {
   isActive: boolean
 }
 
-export default async function UnitsPage({
-  searchParams
-}: {
-  searchParams: Promise<{ q?: string; page?: string }>
-}) {
+export default async function UnitsPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
   const session = await auth()
   if (!session?.user) redirect("/login")
   if (!session.user.permissionKeys.includes("unit.read")) redirect("/forbidden")

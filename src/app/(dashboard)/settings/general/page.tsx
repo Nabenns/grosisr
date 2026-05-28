@@ -14,10 +14,7 @@ export default async function GeneralSettingsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Pengaturan Umum"
-        description="Kebijakan operasional sistem (stok, dll)."
-      />
+      <PageHeader title="Pengaturan Umum" description="Kebijakan operasional sistem (stok, dll)." />
       <GeneralForm allowNegativeStock={allowNegativeStock} />
     </div>
   )

@@ -8,10 +8,7 @@ export default async function NewUserPage() {
   const session = await auth()
   if (!session?.user) redirect("/login")
   if (!session.user.permissionKeys.includes("user.write")) redirect("/forbidden")
-  const [roles, warehouses] = await Promise.all([
-    listAllRolesForSelect(),
-    listAllWarehousesForSelect()
-  ])
+  const [roles, warehouses] = await Promise.all([listAllRolesForSelect(), listAllWarehousesForSelect()])
   return (
     <div>
       <PageHeader title="Tambah Pengguna" />

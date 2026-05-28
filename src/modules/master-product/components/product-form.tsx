@@ -125,10 +125,7 @@ export function ProductForm({ categories, brands, units, initial }: Props) {
           </div>
           <div className="space-y-2">
             <Label>Kategori *</Label>
-            <Select
-              value={watch("categoryId") ?? ""}
-              onValueChange={(v) => v && setValue("categoryId", v)}
-            >
+            <Select value={watch("categoryId") ?? ""} onValueChange={(v) => v && setValue("categoryId", v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih kategori" />
               </SelectTrigger>
@@ -163,10 +160,7 @@ export function ProductForm({ categories, brands, units, initial }: Props) {
           </div>
           <div className="space-y-2">
             <Label>Base Unit *</Label>
-            <Select
-              value={baseUnitId ?? ""}
-              onValueChange={(v) => v && setValue("baseUnitId", v)}
-            >
+            <Select value={baseUnitId ?? ""} onValueChange={(v) => v && setValue("baseUnitId", v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih satuan dasar" />
               </SelectTrigger>
@@ -178,9 +172,7 @@ export function ProductForm({ categories, brands, units, initial }: Props) {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              Satuan terkecil produk (mis. batang/pcs)
-            </p>
+            <p className="text-xs text-muted-foreground">Satuan terkecil produk (mis. batang/pcs)</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="minStock">Stok Minimum (base unit)</Label>
@@ -225,15 +217,8 @@ export function ProductForm({ categories, brands, units, initial }: Props) {
           {hasHet && (
             <div className="space-y-2 max-w-xs">
               <Label htmlFor="hetPrice">HET (per base unit) *</Label>
-              <Input
-                id="hetPrice"
-                type="number"
-                step="1"
-                {...register("hetPrice", { valueAsNumber: true })}
-              />
-              {errors.hetPrice && (
-                <p className="text-sm text-destructive">{errors.hetPrice.message}</p>
-              )}
+              <Input id="hetPrice" type="number" step="1" {...register("hetPrice", { valueAsNumber: true })} />
+              {errors.hetPrice && <p className="text-sm text-destructive">{errors.hetPrice.message}</p>}
               <p className="text-xs text-muted-foreground">
                 Harga jual semua satuan otomatis dicek vs HET (kecuali kamu punya permission override)
               </p>

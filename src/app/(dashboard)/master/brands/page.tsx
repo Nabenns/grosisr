@@ -16,11 +16,7 @@ interface Row {
   productCount: number
 }
 
-export default async function BrandsPage({
-  searchParams
-}: {
-  searchParams: Promise<{ q?: string; page?: string }>
-}) {
+export default async function BrandsPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
   const session = await auth()
   if (!session?.user) redirect("/login")
   if (!session.user.permissionKeys.includes("brand.read")) redirect("/forbidden")

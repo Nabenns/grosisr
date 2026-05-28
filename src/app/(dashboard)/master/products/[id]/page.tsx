@@ -9,11 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatIDR } from "@/lib/money"
 
-export default async function ProductDetailPage({
-  params
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session?.user) redirect("/login")
   if (!session.user.permissionKeys.includes("product.read")) redirect("/forbidden")
@@ -54,8 +50,7 @@ export default async function ProductDetailPage({
           <Card>
             <CardContent className="pt-6 space-y-2 text-sm">
               <div>
-                <span className="text-muted-foreground">Status:</span>{" "}
-                {product.isActive ? "Aktif" : "Nonaktif"}
+                <span className="text-muted-foreground">Status:</span> {product.isActive ? "Aktif" : "Nonaktif"}
               </div>
               <div>
                 <span className="text-muted-foreground">Base Unit:</span> {product.baseUnit.name}
@@ -64,8 +59,7 @@ export default async function ProductDetailPage({
                 <span className="text-muted-foreground">Min Stock:</span> {product.minStock}
               </div>
               <div>
-                <span className="text-muted-foreground">Cukai:</span>{" "}
-                {product.hasCukai ? "Ya" : "Tidak"}
+                <span className="text-muted-foreground">Cukai:</span> {product.hasCukai ? "Ya" : "Tidak"}
               </div>
               <div>
                 <span className="text-muted-foreground">HET:</span>{" "}

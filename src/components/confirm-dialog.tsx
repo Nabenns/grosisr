@@ -46,7 +46,7 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<>{trigger}</> as never} />
+      <DialogTrigger render={(<>{trigger}</>) as never} />
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -56,11 +56,7 @@ export function ConfirmDialog({
           <Button variant="outline" onClick={() => setOpen(false)}>
             {cancelLabel}
           </Button>
-          <Button
-            variant={destructive ? "destructive" : "default"}
-            disabled={loading}
-            onClick={handle}
-          >
+          <Button variant={destructive ? "destructive" : "default"} disabled={loading} onClick={handle}>
             {loading ? "Memproses..." : confirmLabel}
           </Button>
         </DialogFooter>

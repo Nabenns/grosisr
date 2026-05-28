@@ -18,11 +18,7 @@ interface Row {
   isActive: boolean
 }
 
-export default async function UsersPage({
-  searchParams
-}: {
-  searchParams: Promise<{ q?: string; page?: string }>
-}) {
+export default async function UsersPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
   const session = await auth()
   if (!session?.user) redirect("/login")
   if (!session.user.permissionKeys.includes("user.read")) redirect("/forbidden")

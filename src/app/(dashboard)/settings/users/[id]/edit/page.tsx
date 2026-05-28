@@ -1,10 +1,6 @@
 import { notFound, redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
-import {
-  getUserById,
-  listAllRolesForSelect,
-  listAllWarehousesForSelect
-} from "@/modules/users/queries"
+import { getUserById, listAllRolesForSelect, listAllWarehousesForSelect } from "@/modules/users/queries"
 import { UserForm } from "@/modules/users/components/user-form"
 import { PageHeader } from "@/components/page-header"
 

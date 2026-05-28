@@ -31,23 +31,14 @@ export const createProductSchema = z
     minStock: z.coerce.number().int().min(0),
     units: z.array(productUnitSchema).min(1, "Minimal 1 satuan")
   })
-  .refine(
-    (d) =>
-      !d.hasHet ||
-      (d.hetPrice !== null && d.hetPrice !== undefined && d.hetPrice > 0),
-    {
-      message: "HET price wajib jika hasHet=true",
-      path: ["hetPrice"]
-    }
-  )
-  .refine(
-    (d) =>
-      d.units.some((u) => u.unitId === d.baseUnitId && Number(u.conversionToBase) === 1),
-    {
-      message: "Base unit harus ada di units dengan conversion=1",
-      path: ["units"]
-    }
-  )
+  .refine((d) => !d.hasHet || (d.hetPrice !== null && d.hetPrice !== undefined && d.hetPrice > 0), {
+    message: "HET price wajib jika hasHet=true",
+    path: ["hetPrice"]
+  })
+  .refine((d) => d.units.some((u) => u.unitId === d.baseUnitId && Number(u.conversionToBase) === 1), {
+    message: "Base unit harus ada di units dengan conversion=1",
+    path: ["units"]
+  })
   .refine((d) => d.units.filter((u) => u.isDefaultSale).length === 1, {
     message: "Harus pilih tepat 1 default jual",
     path: ["units"]

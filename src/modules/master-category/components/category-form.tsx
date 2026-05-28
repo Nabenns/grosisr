@@ -62,10 +62,7 @@ export function CategoryForm({ parentOptions, initial }: Props) {
       </div>
       <div className="space-y-2">
         <Label>Parent (opsional)</Label>
-        <Select
-          value={parentId ?? "_none"}
-          onValueChange={(v) => setValue("parentId", v === "_none" ? null : v)}
-        >
+        <Select value={parentId ?? "_none"} onValueChange={(v) => setValue("parentId", v === "_none" ? null : v)}>
           <SelectTrigger>
             <SelectValue placeholder="(Root)" />
           </SelectTrigger>

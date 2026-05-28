@@ -42,9 +42,7 @@ export function StoreForm({ initial }: { initial: FormValues }) {
       <div className="space-y-2">
         <Label htmlFor="store_name">Nama Toko *</Label>
         <Input id="store_name" {...register("store_name", { required: "Wajib diisi" })} />
-        {errors.store_name && (
-          <p className="text-sm text-destructive">{errors.store_name.message}</p>
-        )}
+        {errors.store_name && <p className="text-sm text-destructive">{errors.store_name.message}</p>}
       </div>
       <div className="space-y-2">
         <Label htmlFor="store_address">Alamat</Label>

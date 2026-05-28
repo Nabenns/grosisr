@@ -37,10 +37,7 @@ export function UserMenu({ name, username }: { name: string; username: string })
           Profil
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="text-destructive"
-        >
+        <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })} className="text-destructive">
           <LogOut className="h-4 w-4 mr-2" />
           Keluar
         </DropdownMenuItem>

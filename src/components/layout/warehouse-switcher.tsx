@@ -7,13 +7,7 @@ interface WarehouseOption {
   name: string
 }
 
-export function WarehouseSwitcher({
-  warehouses,
-  current
-}: {
-  warehouses: WarehouseOption[]
-  current: string | null
-}) {
+export function WarehouseSwitcher({ warehouses, current }: { warehouses: WarehouseOption[]; current: string | null }) {
   if (warehouses.length === 0) return null
 
   return (

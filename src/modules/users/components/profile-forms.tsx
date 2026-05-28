@@ -111,9 +111,7 @@ export function ProfileForms({ initial }: { initial: { name: string; email: stri
             {...password.register("confirmPassword", { required: true })}
           />
           {password.formState.errors.confirmPassword && (
-            <p className="text-sm text-destructive">
-              {password.formState.errors.confirmPassword.message}
-            </p>
+            <p className="text-sm text-destructive">{password.formState.errors.confirmPassword.message}</p>
           )}
         </div>
         <Button type="submit" disabled={pendingPwd}>

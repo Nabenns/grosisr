@@ -27,17 +27,14 @@ export function Sidebar({ permissionKeys }: { permissionKeys: string[] }) {
             <div className="space-y-1">
               {g.items.map((it) => {
                 const Icon = it.icon
-                const isActive =
-                  pathname === it.href || (it.href !== "/" && pathname.startsWith(it.href))
+                const isActive = pathname === it.href || (it.href !== "/" && pathname.startsWith(it.href))
                 return (
                   <Link
                     key={it.href}
                     href={it.href as never}
                     className={cn(
                       "flex items-center gap-2 px-3 py-2 rounded-md text-sm",
-                      isActive
-                        ? "bg-accent text-accent-foreground font-medium"
-                        : "hover:bg-accent/50"
+                      isActive ? "bg-accent text-accent-foreground font-medium" : "hover:bg-accent/50"
                     )}
                   >
                     {Icon && <Icon className="h-4 w-4" />}
