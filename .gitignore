@@ -39,3 +39,6 @@ public/uploads/*
 
 # TypeScript
 *.tsbuildinfo
+
+# Prisma
+/prisma/migrations/migration_lock.toml.bak
