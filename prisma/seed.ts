@@ -134,7 +134,38 @@ async function main() {
     update: {}
   })
 
-  // 6. Default settings
+  // 6. Common units
+  console.log("Seeding common units...")
+  const commonUnits = ["pcs", "pak", "slop", "dus", "bal", "karton", "batang", "kg", "gram", "liter"]
+  for (const name of commonUnits) {
+    await prisma.unit.upsert({ where: { name }, create: { name }, update: {} })
+  }
+
+  // 7. Walk-in customer + counter init
+  console.log("Seeding walk-in customer...")
+  await prisma.counter.upsert({
+    where: { key: "CUSTOMER" },
+    create: { key: "CUSTOMER", value: 0 },
+    update: {}
+  })
+  await prisma.counter.upsert({
+    where: { key: "SUPPLIER" },
+    create: { key: "SUPPLIER", value: 0 },
+    update: {}
+  })
+  await prisma.customer.upsert({
+    where: { code: "CUS-WALKIN" },
+    create: {
+      code: "CUS-WALKIN",
+      name: "Walk-in",
+      customerType: "RETAIL",
+      creditLimit: 0,
+      termOfPaymentDays: 0
+    },
+    update: {}
+  })
+
+  // 8. Default settings
   console.log("Seeding default settings...")
   const defaultSettings: { key: string; value: string }[] = [
     { key: "allow_negative_stock", value: "false" },
