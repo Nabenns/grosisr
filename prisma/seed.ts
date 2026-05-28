@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client"
+import { PrismaClient, type Prisma } from "@prisma/client"
 import bcrypt from "bcryptjs"
 import crypto from "node:crypto"
 import { allPermissions, ROLE_PERMISSIONS, expandRolePatterns } from "../src/lib/permissions"
@@ -6,6 +6,12 @@ import { allPermissions, ROLE_PERMISSIONS, expandRolePatterns } from "../src/lib
 const prisma = new PrismaClient()
 
 async function main() {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "Seed script must not run in production. Set NODE_ENV != 'production' or run manually with explicit confirmation."
+    )
+  }
+
   // 1. Permissions
   console.log("Seeding permissions...")
   const permissions = allPermissions()
@@ -45,17 +51,26 @@ async function main() {
     const patterns = ROLE_PERMISSIONS[spec.name]
     if (!patterns) continue
     const expandedKeys = expandRolePatterns(patterns, allKeys)
-    const permissionIds = expandedKeys
-      .map((k) => permissionsByKey.get(k))
-      .filter((id): id is string => Boolean(id))
-
-    await prisma.rolePermission.deleteMany({ where: { roleId: role.id } })
-    if (permissionIds.length > 0) {
-      await prisma.rolePermission.createMany({
-        data: permissionIds.map((permissionId) => ({ roleId: role.id, permissionId })),
-        skipDuplicates: true
-      })
+    const missing = expandedKeys.filter((k) => !permissionsByKey.has(k))
+    if (missing.length > 0) {
+      throw new Error(
+        `Role ${spec.name} references unknown permissions: ${missing.join(", ")}`
+      )
     }
+    const permissionIds = expandedKeys.map((k) => permissionsByKey.get(k)!)
+
+    const ops: Prisma.PrismaPromise<unknown>[] = [
+      prisma.rolePermission.deleteMany({ where: { roleId: role.id } })
+    ]
+    if (permissionIds.length > 0) {
+      ops.push(
+        prisma.rolePermission.createMany({
+          data: permissionIds.map((permissionId) => ({ roleId: role.id, permissionId })),
+          skipDuplicates: true
+        })
+      )
+    }
+    await prisma.$transaction(ops)
   }
 
   // 3. Default warehouse
