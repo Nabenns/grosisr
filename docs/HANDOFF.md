@@ -128,3 +128,93 @@ Integration test setup (Task 30) + E2E Playwright (Task 31) defer ke M2 polish.
 - 29 unit test passing
 - pnpm build PASS, ~ 4 routes static + dynamic /api/auth/[...nextauth]
 - Middleware bundle 83kB (edge-safe)
+---
+
+## M2 Closed (2026-05-28)
+
+Status: COMPLETE.
+
+### Selesai (M2)
+
+**Phase A - Schema & Core (Task 1-4):**
+- Prisma schema: 10 models baru (StockMovement, StockAdjustment, StockAdjustmentItem, StockTransfer, StockTransferItem, PurchaseOrder, PurchaseOrderItem, PurchaseInvoice, PurchaseInvoiceItem, SaleInvoice, SaleInvoiceItem) + 7 enums (MovementDirection, MovementType, AdjustmentReason, AdjustmentStatus, TransferStatus, PurchaseOrderStatus, PurchaseInvoiceStatus, SaleType, SaleStatus, PaymentMethod)
+- Inverse relations ditambah ke User, Warehouse, Product, ProductUnit, Supplier, Customer
+- src/lib/document-number.ts dengan atomic counter via UPDATE...RETURNING
+- src/lib/stock-movement.ts dengan applyStockMovement helper (SELECT FOR UPDATE row lock + negative stock guard)
+- src/lib/setting.ts helper
+
+**Phase B - Inventaris (Task 5-9):**
+- Stock Adjustment: create/post/cancel + form dengan field array + halaman list/new/detail
+- Stock Transfer: create/send/receive dengan auto-discrepancy adjustment + halaman + receive form
+- Stock Opname: worksheet generator + auto-post adjustment dengan reason=OPNAME
+
+**Phase C - Pembelian (Task 10-12):**
+- Purchase Order: CRUD + send/cancel + recomputePOStatus helper
+- Purchase Invoice: posting flow lengkap (compute totals, stock IN, PO sync) + void flow (reverse stock OUT)
+- Halaman: list, new (dari PO atau direct), detail, edit (untuk PO DRAFT)
+
+**Phase D - Penjualan (Task 13-15):**
+- Sale POS service: postSale dengan idempotency + CASH/CREDIT validation + change calculation
+- POS UI: 2-pane layout (cart + payment), keyboard shortcuts (F2 search, F8 bayar, Esc cancel), auto-add scan barcode
+- Sale invoice: list + detail + VOID dengan modal alasan
+- Receipt page: print-friendly HTML thermal-style
+
+**Phase E - Polish (Task 17 only):**
+- Nav config update: tambah grup Inventaris (extension), Pembelian, Penjualan
+- Task 16 (integration test infra) deferred ke M3 karena domain udah cukup matang dan unit test coverage decent (51 tests)
+
+### Tests Coverage M2 Final
+
+- 51 unit tests across 12 test files:
+  - lib/document-number.test.ts (3 cases)
+  - lib/stock-movement.test.ts (7 cases - includes negative stock guard)
+  - modules/inventory-adjustment/service.test.ts (5 cases)
+  - modules/purchase-order/service.test.ts (3 cases - computePOTotal)
+  - modules/sale-pos/schema.test.ts (4 cases - validation)
+  - + M1 tests (29 cases) preserved
+
+### Permission seed (no change needed)
+
+Permission set yang sudah ada di M1 (`src/lib/permissions.ts`) cover semua M2 actions:
+- inventory.adjustment.create / inventory.adjustment.post
+- inventory.transfer.create / inventory.transfer.send / inventory.transfer.receive
+- inventory.opname.run
+- purchase.po.read / purchase.po.write
+- purchase.invoice.read / purchase.invoice.write / purchase.invoice.post / purchase.invoice.void
+- sale.read / sale.write / sale.post / sale.discount.apply / sale.void
+
+KASIR auto-include sale.* + customer.write + product.read + inventory.read.
+GUDANG auto-include inventory.* + purchase.invoice.* + purchase.return.*.
+ADMIN: semua kecuali user/role.
+
+### Belum (M3 scope)
+
+- Returns: PurchaseReturn (RTNB), SaleReturn (RTNJ) - reverse stock + adjust hutang/piutang
+- AccountPayable + payments: invoice posting sudah generate hutang? -> NO, M2 cuma create invoice. M3 add AccountPayable model + auto-create di posting + payment apply (multi-invoice)
+- AccountReceivable + payments: same pattern utk credit sale
+- Reports: stok, penjualan, pembelian, hutang/piutang, kartu stok, aging
+- Dashboard chart + notifications
+- Activity log advanced filter + diff modal viewer
+- Integration test infra (Task 16 carry-over)
+- Edge runtime middleware split sudah selesai di M1; tidak ada blocker deploy
+
+### Catatan Penting Implementasi M2
+
+- **stock-movement.ts** pakai `$queryRawUnsafe` dengan parameterized SELECT FOR UPDATE. Verified lock acquired di Postgres (visible via pg_locks saat transaksi sedang jalan).
+- **Idempotency POS** pakai client-generated UUID (`Date.now() + random suffix`) dipersist di tabel `IdempotencyKey`. Replay -> throw IDEMPOTENCY_REPLAY error code. Refresh page atau Esc reset key.
+- **Cart state** di POS pure client (useState). Tidak persist di server -> kalau kasir refresh, cart hilang. Future: localStorage backup atau session-based draft.
+- **PO -> Invoice flow** preserve poItemId per line item. Invoice posting update qty_received di PurchaseOrderItem + recompute PO status (PARTIAL/COMPLETED). VOID invoice rollback qty_received juga.
+- **Transfer discrepancy** generates ADJUSTMENT (reason=ADJUSTMENT) di gudang asal otomatis kalau qty_received < qty_sent. Audit-trail kepekaan tinggi.
+- **Stock OUT in CASH sale** respects `allow_negative_stock` setting (Setting table key=allow_negative_stock). KASIR tidak bisa override; ADMIN+ ubah via /settings/general.
+- **Receipt** server-rendered, browser print dialog. No ESC/POS direct (Task 33 future enhancement).
+
+### Lint warnings
+
+15x react-hooks/incompatible-library warnings (RHF + tanstack table) - false positive, harmless. Bisa di-suppress di eslint.config kalau bosan, tapi gak crash apapun.
+
+### Final stats M2
+
+- 8 commits di branch master untuk M2 (df1a396..)
+- ~10 modules baru: inventory-adjustment, inventory-transfer, inventory-opname, purchase-order, purchase-invoice, sale-pos, sale-invoice (queries+actions di sale-pos)
+- 51 unit tests passing, 12 test files
+- pnpm build PASS, middleware bundle 83KB (M1 split preserved)

@@ -8,6 +8,13 @@ import {
   UserCircle,
   Warehouse as WarehouseIcon,
   Boxes,
+  ClipboardList,
+  ArrowLeftRight,
+  ClipboardCheck,
+  ShoppingCart,
+  FileText,
+  Calculator,
+  Receipt,
   Users,
   Shield,
   Store,
@@ -47,7 +54,51 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "Inventaris",
-    items: [{ label: "Saldo Stok", href: "/inventory/stock", icon: Boxes, permission: "inventory.read" }]
+    items: [
+      { label: "Saldo Stok", href: "/inventory/stock", icon: Boxes, permission: "inventory.read" },
+      {
+        label: "Penyesuaian Stok",
+        href: "/inventory/adjustments",
+        icon: ClipboardList,
+        permission: "inventory.adjustment.create"
+      },
+      {
+        label: "Mutasi Antar Gudang",
+        href: "/inventory/transfers",
+        icon: ArrowLeftRight,
+        permission: "inventory.transfer.create"
+      },
+      {
+        label: "Stok Opname",
+        href: "/inventory/opname",
+        icon: ClipboardCheck,
+        permission: "inventory.opname.run"
+      }
+    ]
+  },
+  {
+    label: "Pembelian",
+    items: [
+      {
+        label: "Purchase Order",
+        href: "/purchase/orders",
+        icon: ShoppingCart,
+        permission: "purchase.po.read"
+      },
+      {
+        label: "Faktur Pembelian",
+        href: "/purchase/invoices",
+        icon: FileText,
+        permission: "purchase.invoice.read"
+      }
+    ]
+  },
+  {
+    label: "Penjualan",
+    items: [
+      { label: "Kasir / POS", href: "/sale/pos", icon: Calculator, permission: "sale.write" },
+      { label: "Faktur Penjualan", href: "/sale/invoices", icon: Receipt, permission: "sale.read" }
+    ]
   },
   {
     label: "Pengaturan",
