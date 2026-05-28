@@ -8,3 +8,265 @@ datasource db {
   url        = env("DATABASE_URL")
   extensions = [pg_trgm]
 }
+
+model User {
+  id                  String          @id @default(cuid())
+  username            String          @unique
+  email               String?         @unique
+  passwordHash        String
+  name                String
+  isActive            Boolean         @default(true)
+  defaultWarehouseId  String?
+  defaultWarehouse    Warehouse?      @relation("UserDefaultWarehouse", fields: [defaultWarehouseId], references: [id])
+  roles               UserRole[]
+  warehouseAccess     UserWarehouse[]
+  auditLogs           AuditLog[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  deletedAt           DateTime?
+
+  @@index([deletedAt])
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  isSystem    Boolean          @default(false)
+  permissions RolePermission[]
+  users       UserRole[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  description String
+  module      String
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  @@id([roleId, permissionId])
+}
+
+model UserRole {
+  userId String
+  roleId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  @@id([userId, roleId])
+}
+
+model UserWarehouse {
+  userId      String
+  warehouseId String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  @@id([userId, warehouseId])
+}
+
+model Category {
+  id        String     @id @default(cuid())
+  name      String
+  parentId  String?
+  parent    Category?  @relation("Subcategory", fields: [parentId], references: [id])
+  children  Category[] @relation("Subcategory")
+  products  Product[]
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  deletedAt DateTime?
+
+  @@unique([name, parentId])
+  @@index([parentId])
+  @@index([deletedAt])
+}
+
+model Brand {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  isActive  Boolean   @default(true)
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model Unit {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  isActive     Boolean       @default(true)
+  productUnits ProductUnit[]
+  productsBase Product[]     @relation("ProductBaseUnit")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  sku         String        @unique
+  name        String
+  categoryId  String
+  brandId     String?
+  baseUnitId  String
+  description String?
+  imageUrl    String?
+  hasCukai    Boolean       @default(false)
+  hasHet      Boolean       @default(false)
+  hetPrice    Decimal?      @db.Decimal(15, 2)
+  minStock    Int           @default(0)
+  isActive    Boolean       @default(true)
+  version     Int           @default(0)
+
+  category    Category      @relation(fields: [categoryId], references: [id])
+  brand       Brand?        @relation(fields: [brandId], references: [id])
+  baseUnit    Unit          @relation("ProductBaseUnit", fields: [baseUnitId], references: [id])
+  units       ProductUnit[]
+  stocks      StockBalance[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([name])
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([deletedAt])
+}
+
+model ProductUnit {
+  id                String   @id @default(cuid())
+  productId         String
+  unitId            String
+  conversionToBase  Decimal  @db.Decimal(15, 4)
+  barcode           String?  @unique
+  purchasePrice     Decimal  @db.Decimal(15, 2)
+  salePrice         Decimal  @db.Decimal(15, 2)
+  isDefaultPurchase Boolean  @default(false)
+  isDefaultSale     Boolean  @default(false)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  unit    Unit    @relation(fields: [unitId], references: [id])
+
+  @@unique([productId, unitId])
+  @@index([barcode])
+}
+
+enum CustomerType {
+  RESELLER
+  RETAIL
+}
+
+model Supplier {
+  id                  String    @id @default(cuid())
+  code                String    @unique
+  name                String
+  phone               String?
+  address             String?
+  npwp                String?
+  termOfPaymentDays   Int       @default(0)
+  isActive            Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  @@index([deletedAt])
+}
+
+model Customer {
+  id                  String       @id @default(cuid())
+  code                String       @unique
+  name                String
+  phone               String?
+  address             String?
+  customerType        CustomerType @default(RETAIL)
+  creditLimit         Decimal      @default(0) @db.Decimal(15, 2)
+  termOfPaymentDays   Int          @default(0)
+  isActive            Boolean      @default(true)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  deletedAt           DateTime?
+
+  @@index([deletedAt])
+}
+
+model Warehouse {
+  id         String          @id @default(cuid())
+  code       String          @unique
+  name       String
+  address    String?
+  isActive   Boolean         @default(true)
+  isDefault  Boolean         @default(false)
+  users      User[]          @relation("UserDefaultWarehouse")
+  userAccess UserWarehouse[]
+  stocks     StockBalance[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  deletedAt  DateTime?
+
+  @@index([deletedAt])
+}
+
+model StockBalance {
+  productId   String
+  warehouseId String
+  qtyInBase   Decimal   @default(0) @db.Decimal(15, 4)
+  minStock    Int?
+  updatedAt   DateTime  @updatedAt
+
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@id([productId, warehouseId])
+  @@index([warehouseId])
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  POST
+  VOID
+}
+
+model AuditLog {
+  id          String      @id @default(cuid())
+  actorUserId String
+  entity      String
+  entityId    String
+  action      AuditAction
+  diffJson    Json?
+  occurredAt  DateTime    @default(now())
+
+  actor User @relation(fields: [actorUserId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([actorUserId, occurredAt])
+}
+
+model Counter {
+  key   String @id
+  value Int    @default(0)
+}
+
+model IdempotencyKey {
+  key          String   @id
+  responseHash String
+  payload      Json
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
