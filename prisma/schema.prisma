@@ -21,6 +21,16 @@ model User {
   roles               UserRole[]
   warehouseAccess     UserWarehouse[]
   auditLogs           AuditLog[]
+  movementsCreated    StockMovement[]
+  adjustmentsCreated  StockAdjustment[] @relation("AdjustmentCreatedBy")
+  adjustmentsPosted   StockAdjustment[] @relation("AdjustmentPostedBy")
+  transfersCreated    StockTransfer[] @relation("TransferCreatedBy")
+  transfersReceived   StockTransfer[] @relation("TransferReceivedBy")
+  posCreated          PurchaseOrder[] @relation("POCreatedBy")
+  pInvCreated         PurchaseInvoice[] @relation("PInvCreatedBy")
+  pInvVoided          PurchaseInvoice[] @relation("PInvVoidedBy")
+  salesCreated        SaleInvoice[] @relation("SaleCreatedBy")
+  salesVoided         SaleInvoice[] @relation("SaleVoidedBy")
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
   deletedAt           DateTime?
@@ -125,11 +135,14 @@ model Product {
   isActive    Boolean       @default(true)
   version     Int           @default(0)
 
-  category    Category      @relation(fields: [categoryId], references: [id])
-  brand       Brand?        @relation(fields: [brandId], references: [id])
-  baseUnit    Unit          @relation("ProductBaseUnit", fields: [baseUnitId], references: [id])
-  units       ProductUnit[]
-  stocks      StockBalance[]
+  category        Category              @relation(fields: [categoryId], references: [id])
+  brand           Brand?                @relation(fields: [brandId], references: [id])
+  baseUnit        Unit                  @relation("ProductBaseUnit", fields: [baseUnitId], references: [id])
+  units           ProductUnit[]
+  stocks          StockBalance[]
+  movements       StockMovement[]
+  adjustmentItems StockAdjustmentItem[]
+  transferItems   StockTransferItem[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -152,8 +165,11 @@ model ProductUnit {
   isDefaultPurchase Boolean  @default(false)
   isDefaultSale     Boolean  @default(false)
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  unit    Unit    @relation(fields: [unitId], references: [id])
+  product   Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  unit      Unit                  @relation(fields: [unitId], references: [id])
+  poItems   PurchaseOrderItem[]
+  pInvItems PurchaseInvoiceItem[]
+  saleItems SaleInvoiceItem[]
 
   @@unique([productId, unitId])
   @@index([barcode])
@@ -177,6 +193,9 @@ model Supplier {
   updatedAt           DateTime  @updatedAt
   deletedAt           DateTime?
 
+  purchaseOrders   PurchaseOrder[]
+  purchaseInvoices PurchaseInvoice[]
+
   @@index([deletedAt])
 }
 
@@ -194,6 +213,8 @@ model Customer {
   updatedAt           DateTime     @updatedAt
   deletedAt           DateTime?
 
+  sales SaleInvoice[]
+
   @@index([deletedAt])
 }
 
@@ -207,6 +228,15 @@ model Warehouse {
   users      User[]          @relation("UserDefaultWarehouse")
   userAccess UserWarehouse[]
   stocks     StockBalance[]
+
+  movements        StockMovement[]
+  adjustments      StockAdjustment[]
+  transfersFrom    StockTransfer[]   @relation("TransferFrom")
+  transfersTo      StockTransfer[]   @relation("TransferTo")
+  purchaseOrders   PurchaseOrder[]
+  purchaseInvoices PurchaseInvoice[]
+  sales            SaleInvoice[]
+
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
   deletedAt  DateTime?
@@ -269,4 +299,309 @@ model Setting {
   key       String   @id
   value     String
   updatedAt DateTime @updatedAt
+}
+
+// =============================================================================
+// M2 - Stock Movement & Transactions
+// =============================================================================
+
+enum MovementDirection {
+  IN
+  OUT
+}
+
+enum MovementType {
+  PURCHASE
+  SALE
+  ADJUSTMENT
+  TRANSFER_IN
+  TRANSFER_OUT
+  RETURN_IN
+  RETURN_OUT
+  OPNAME
+}
+
+model StockMovement {
+  id           String            @id @default(cuid())
+  productId    String
+  warehouseId  String
+  qtyInBase    Decimal           @db.Decimal(15, 4)
+  direction    MovementDirection
+  movementType MovementType
+  refType      String
+  refId        String
+  occurredAt   DateTime          @default(now())
+  createdById  String
+  note         String?
+
+  product   Product   @relation(fields: [productId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  createdBy User      @relation(fields: [createdById], references: [id])
+
+  @@index([productId, warehouseId, occurredAt])
+  @@index([refType, refId])
+}
+
+enum AdjustmentReason {
+  RUSAK
+  HILANG
+  OPNAME
+  KOREKSI
+  LAINNYA
+}
+
+enum AdjustmentStatus {
+  DRAFT
+  POSTED
+  CANCELLED
+}
+
+model StockAdjustment {
+  id          String                @id @default(cuid())
+  code        String                @unique
+  warehouseId String
+  reason      AdjustmentReason
+  status      AdjustmentStatus      @default(DRAFT)
+  note        String?
+  createdById String
+  postedAt    DateTime?
+  postedById  String?
+  items       StockAdjustmentItem[]
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  createdBy User      @relation("AdjustmentCreatedBy", fields: [createdById], references: [id])
+  postedBy  User?     @relation("AdjustmentPostedBy", fields: [postedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([warehouseId])
+  @@index([status])
+}
+
+model StockAdjustmentItem {
+  id            String  @id @default(cuid())
+  adjustmentId  String
+  productId     String
+  qtyInBaseDiff Decimal @db.Decimal(15, 4)
+  note          String?
+
+  adjustment StockAdjustment @relation(fields: [adjustmentId], references: [id], onDelete: Cascade)
+  product    Product         @relation(fields: [productId], references: [id])
+}
+
+enum TransferStatus {
+  DRAFT
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+model StockTransfer {
+  id              String              @id @default(cuid())
+  code            String              @unique
+  fromWarehouseId String
+  toWarehouseId   String
+  status          TransferStatus      @default(DRAFT)
+  note            String?
+  createdById     String
+  sentAt          DateTime?
+  receivedAt      DateTime?
+  receivedById    String?
+  items           StockTransferItem[]
+
+  fromWarehouse Warehouse @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
+  toWarehouse   Warehouse @relation("TransferTo", fields: [toWarehouseId], references: [id])
+  createdBy     User      @relation("TransferCreatedBy", fields: [createdById], references: [id])
+  receivedBy    User?     @relation("TransferReceivedBy", fields: [receivedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+model StockTransferItem {
+  id         String  @id @default(cuid())
+  transferId String
+  productId  String
+  qtyInBase  Decimal @db.Decimal(15, 4)
+
+  transfer StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  product  Product       @relation(fields: [productId], references: [id])
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SENT
+  PARTIAL
+  COMPLETED
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id           String              @id @default(cuid())
+  code         String              @unique
+  supplierId   String
+  warehouseId  String
+  orderDate    DateTime
+  expectedDate DateTime?
+  status       PurchaseOrderStatus @default(DRAFT)
+  total        Decimal             @db.Decimal(15, 2)
+  note         String?
+  createdById  String
+  items        PurchaseOrderItem[]
+  invoices     PurchaseInvoice[]
+
+  supplier  Supplier  @relation(fields: [supplierId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  createdBy User      @relation("POCreatedBy", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([supplierId])
+  @@index([status])
+}
+
+model PurchaseOrderItem {
+  id            String  @id @default(cuid())
+  poId          String
+  productUnitId String
+  qty           Decimal @db.Decimal(15, 4)
+  qtyReceived   Decimal @default(0) @db.Decimal(15, 4)
+  price         Decimal @db.Decimal(15, 2)
+  discount      Decimal @default(0) @db.Decimal(15, 2)
+  subtotal      Decimal @db.Decimal(15, 2)
+
+  po          PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  productUnit ProductUnit   @relation(fields: [productUnitId], references: [id])
+}
+
+enum PurchaseInvoiceStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  VOID
+}
+
+model PurchaseInvoice {
+  id                String                @id @default(cuid())
+  code              String                @unique
+  poId              String?
+  supplierId        String
+  warehouseId       String
+  supplierInvoiceNo String?
+  invoiceDate       DateTime
+  dueDate           DateTime
+  subtotal          Decimal               @db.Decimal(15, 2)
+  discount          Decimal               @default(0) @db.Decimal(15, 2)
+  tax               Decimal               @default(0) @db.Decimal(15, 2)
+  total             Decimal               @db.Decimal(15, 2)
+  paidAmount        Decimal               @default(0) @db.Decimal(15, 2)
+  status            PurchaseInvoiceStatus @default(UNPAID)
+  note              String?
+  createdById       String
+  postedAt          DateTime
+  voidedAt          DateTime?
+  voidedById        String?
+  voidReason        String?
+  items             PurchaseInvoiceItem[]
+
+  po        PurchaseOrder? @relation(fields: [poId], references: [id])
+  supplier  Supplier       @relation(fields: [supplierId], references: [id])
+  warehouse Warehouse      @relation(fields: [warehouseId], references: [id])
+  createdBy User           @relation("PInvCreatedBy", fields: [createdById], references: [id])
+  voidedBy  User?          @relation("PInvVoidedBy", fields: [voidedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([supplierId])
+  @@index([status])
+}
+
+model PurchaseInvoiceItem {
+  id            String  @id @default(cuid())
+  invoiceId     String
+  productUnitId String
+  qty           Decimal @db.Decimal(15, 4)
+  qtyReturned   Decimal @default(0) @db.Decimal(15, 4)
+  price         Decimal @db.Decimal(15, 2)
+  discount      Decimal @default(0) @db.Decimal(15, 2)
+  subtotal      Decimal @db.Decimal(15, 2)
+
+  invoice     PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productUnit ProductUnit     @relation(fields: [productUnitId], references: [id])
+}
+
+enum SaleType {
+  CASH
+  CREDIT
+}
+
+enum SaleStatus {
+  DRAFT
+  UNPAID
+  PARTIAL
+  PAID
+  VOID
+}
+
+enum PaymentMethod {
+  TUNAI
+  TRANSFER
+  QRIS
+  KARTU
+}
+
+model SaleInvoice {
+  id            String            @id @default(cuid())
+  code          String            @unique
+  customerId    String?
+  warehouseId   String
+  saleType      SaleType          @default(CASH)
+  invoiceDate   DateTime
+  dueDate       DateTime?
+  subtotal      Decimal           @db.Decimal(15, 2)
+  discount      Decimal           @default(0) @db.Decimal(15, 2)
+  tax           Decimal           @default(0) @db.Decimal(15, 2)
+  total         Decimal           @db.Decimal(15, 2)
+  paidAmount    Decimal           @default(0) @db.Decimal(15, 2)
+  changeAmount  Decimal           @default(0) @db.Decimal(15, 2)
+  status        SaleStatus
+  paymentMethod PaymentMethod?
+  paymentRefNo  String?
+  note          String?
+  createdById   String
+  postedAt      DateTime
+  voidedAt      DateTime?
+  voidedById    String?
+  voidReason    String?
+  items         SaleInvoiceItem[]
+
+  customer  Customer? @relation(fields: [customerId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  createdBy User      @relation("SaleCreatedBy", fields: [createdById], references: [id])
+  voidedBy  User?     @relation("SaleVoidedBy", fields: [voidedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([status, postedAt])
+}
+
+model SaleInvoiceItem {
+  id            String  @id @default(cuid())
+  invoiceId     String
+  productUnitId String
+  qty           Decimal @db.Decimal(15, 4)
+  qtyReturned   Decimal @default(0) @db.Decimal(15, 4)
+  price         Decimal @db.Decimal(15, 2)
+  discount      Decimal @default(0) @db.Decimal(15, 2)
+  subtotal      Decimal @db.Decimal(15, 2)
+
+  invoice     SaleInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productUnit ProductUnit @relation(fields: [productUnitId], references: [id])
 }
