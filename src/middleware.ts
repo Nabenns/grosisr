@@ -1,3 +1,4 @@
+// TODO(M1 polish / Task 32): split into auth.config.ts (edge-safe) for middleware to keep bcryptjs out of the edge bundle.
 import { auth } from "@/lib/auth"
 import { NextResponse } from "next/server"
 
