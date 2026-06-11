@@ -42,3 +42,7 @@ public/uploads/*
 
 # Prisma
 /prisma/migrations/migration_lock.toml.bak
+
+# E2E test screenshots
+tests/e2e/shots/
+

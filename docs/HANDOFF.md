@@ -218,3 +218,36 @@ ADMIN: semua kecuali user/role.
 - ~10 modules baru: inventory-adjustment, inventory-transfer, inventory-opname, purchase-order, purchase-invoice, sale-pos, sale-invoice (queries+actions di sale-pos)
 - 51 unit tests passing, 12 test files
 - pnpm build PASS, middleware bundle 83KB (M1 split preserved)
+---
+
+## Catatan Testing E2E (2026-06-11) - PERLU PERHATIAN
+
+Saat coba smoke test M2 pakai Playwright (login -> produk -> POS -> stok), ketemu runtime issue di **production server** (`pnpm start`):
+
+### Gejala
+- `GET /login` return **500 Internal Server Error** di production mode.
+- Console: `Cannot find module './3743.js'` dari `.next/server/webpack-runtime.js` (chunk reference rusak).
+- React error #418 (hydration failed) saat halaman ke-render parsial.
+- `pnpm build` SENDIRI selalu SUCCESS (exit 0). Masalah muncul saat runtime `pnpm start`.
+
+### Diagnosis sementara (belum fixed)
+1. **Chunk resolution bug** - webpack-runtime gak nemu chunk `./3743.js`. Kemungkinan:
+   - Stale `.next` artifacts (sudah coba clean rebuild beberapa kali, masih muncul).
+   - Route group `(auth)` / `(dashboard)` dengan kurung di path + Windows path encoding di Next 15.5.18 webpack.
+   - `next start` fallback ke dev bundler (kelihatan dari `react-refresh.js` + `setup-dev-bundler` di stack) - indikasi `next start` jalan tapi serve dev artifacts.
+2. **Belum dipastikan** apakah ini cuma masalah environment Windows lokal atau real bug yang akan muncul juga di Linux/Vercel deploy.
+
+### Yang HARUS dicek saat lanjut di device baru
+1. **Coba `pnpm dev` dulu** (bukan `pnpm start`) dan akses http://localhost:3000/login manual di browser. Dev mode kemungkinan jalan normal (compile on-demand). Kalau dev jalan tapi start gagal -> masalah di production build artifacts/chunking.
+2. **Kalau dev juga 500:** cek apakah `(auth)` route group bikin masalah. Test pindahin login ke route biasa `/login` tanpa group, atau cek apakah `src/middleware.ts` (yang import NextAuth) bikin edge bundle error.
+3. **Coba di Linux/WSL.** Banyak Next.js webpack chunk bug Windows-specific (path separator, case-sensitivity). Kalau ada akses Linux/Mac, build+start di sana untuk isolate apakah ini Windows-only.
+4. **Cek versi:** Next 15.5.18 + Turbopack vs Webpack. Coba `next start` setelah `next build --turbopack` atau sebaliknya. Atau pertimbangkan upgrade Next ke 15.6+ (mungkin ada fix chunk resolution).
+5. **bcryptjs di middleware** - meski sudah split auth.config.ts (M1 Task 32), pastikan middleware bener-bener gak transitively import bcrypt. `Cannot find module` kadang gejala dari modul yang di-exclude tapi masih di-reference.
+
+### Status verifikasi M2
+- **Static checks SEMUA PASS:** typecheck (tsc), lint (eslint), 51 unit tests (vitest), build (next build exit 0).
+- **Runtime E2E BELUM bisa diverifikasi** karena 500 di atas. Logic layer (service, posting, stock movement) sudah di-unit-test, tapi full browser flow (login -> POS -> stok) belum confirmed jalan end-to-end.
+- **Prioritas #1 saat lanjut:** resolve runtime 500, lalu jalankan smoke test (`docs/../grosir-e2e/smoke.py` ada di temp, atau tulis ulang Playwright E2E proper di `tests/e2e/`).
+
+### File test yang dipakai (di temp, bukan di repo)
+Smoke script ada di `C:\Users\USER\AppData\Local\Temp\opencode\grosir-e2e\smoke.py` - covers login + create category/brand/product + purchase invoice + POS sale + stock check. Bisa jadi basis untuk `tests/e2e/` proper (M2 Task 16 yang di-defer).
