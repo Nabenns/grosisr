@@ -261,6 +261,31 @@ def main():
         if row.is_visible():
             print(f"[stock] {row.inner_text()}")
 
+        # 8b. PROFIT LOSS REPORT
+        print("\n=== 8b. PROFIT LOSS REPORT ===")
+        try:
+            page.goto(f"{BASE}/reports/profit-loss", wait_until="networkidle")
+            page.wait_for_timeout(1500)
+            revenue = page.locator('[data-testid="pl-revenue"]').first.inner_text(timeout=10000)
+            cogs = page.locator('[data-testid="pl-cogs"]').first.inner_text(timeout=10000)
+            profit = page.locator('[data-testid="pl-profit"]').first.inner_text(timeout=10000)
+            margin = page.locator('[data-testid="pl-margin"]').first.inner_text(timeout=10000)
+            assert revenue.startswith("Rp"), f"revenue not IDR: {revenue}"
+            assert cogs.startswith("Rp"), f"cogs not IDR: {cogs}"
+            assert profit.startswith("Rp"), f"profit not IDR: {profit}"
+            assert margin.endswith("%"), f"margin not percent: {margin}"
+            assert page.locator('[data-testid="profit-chart"]').count() == 1, "revenue chart missing"
+            assert page.locator('[data-testid="top-product-chart"]').count() == 1, "product chart missing"
+            page.fill("#from", "2026-01-01")
+            page.click('button:has-text("Terapkan")')
+            page.wait_for_load_state("networkidle")
+            assert "from=2026-01-01" in page.url, f"date filter not applied: {page.url}"
+            shot(page, "18-profit-loss")
+            print(f"[ok] profit-loss: omzet={revenue} hpp={cogs} laba={profit} margin={margin}")
+        except Exception as e:
+            print(f"[FAIL] profit-loss: {e}")
+            errors.append(f"profit-loss: {e}")
+
         print(f"\n=== SUMMARY: {len(errors)} errors ===")
         for e in errors:
             print(f"  - {e}")

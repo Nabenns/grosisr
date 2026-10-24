@@ -13,6 +13,7 @@ import {
   ClipboardCheck,
   ShoppingCart,
   FileText,
+  TrendingUp,
   Calculator,
   Receipt,
   Users,
@@ -99,7 +100,8 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Kasir / POS", href: "/sale/pos", icon: Calculator, permission: "sale.write" },
       { label: "Faktur Penjualan", href: "/sale/invoices", icon: Receipt, permission: "sale.read" },
-      { label: "Laporan Penjualan", href: "/reports/sales", icon: FileText, permission: "sale.read" }
+      { label: "Laporan Penjualan", href: "/reports/sales", icon: FileText, permission: "sale.read" },
+      { label: "Laba Rugi", href: "/reports/profit-loss", icon: TrendingUp, permission: "sale.read" }
     ]
   },
   {
