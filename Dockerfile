@@ -28,7 +28,6 @@ ENV NODE_ENV=production \
 RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
   && rm -rf /var/lib/apt/lists/* \
-  && corepack enable && corepack prepare pnpm@10.34.8 --activate \
   && useradd -m -u 10001 grosir
 
 WORKDIR /app
@@ -46,4 +45,4 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
   CMD node -e "fetch('http://127.0.0.1:3000/api/auth/session').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-CMD ["pnpm", "start"]
+CMD ["./node_modules/.bin/next", "start"]

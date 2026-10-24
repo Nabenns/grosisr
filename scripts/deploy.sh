@@ -11,7 +11,7 @@ echo "[1/5] Rsync repo ke VPS..."
 export SSHPASS="${SSHPASS:?Set SSHPASS env var}"
 rsync -az --delete \
   --exclude node_modules --exclude .next --exclude .git --exclude .env \
-  --exclude '*.log' --exclude .turbo \
+  --exclude .env.production --exclude '*.log' --exclude .turbo \
   -e "sshpass -e ssh -o StrictHostKeyChecking=no" \
   . "$REMOTE_DIR/"
 
