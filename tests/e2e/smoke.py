@@ -20,7 +20,8 @@ import time
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
-BASE = "http://localhost:3000"
+import os
+BASE = os.environ.get("BASE_URL", "http://localhost:3000")
 SUFFIX = str(int(time.time()))[-6:]
 SHOTS = Path(__file__).parent / "shots"
 SHOTS.mkdir(parents=True, exist_ok=True)
