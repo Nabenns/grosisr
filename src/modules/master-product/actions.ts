@@ -28,7 +28,7 @@ export async function createProductAction(input: unknown) {
         action: AuditAction.CREATE,
         after: created as unknown as Record<string, unknown>
       })
-      return created
+      return { id: created.id }
     })
     revalidatePath("/master/products")
     return result
@@ -55,7 +55,7 @@ export async function updateProductAction(input: unknown) {
         before: before as unknown as Record<string, unknown> | null,
         after: updated as unknown as Record<string, unknown>
       })
-      return updated
+      return { id: updated.id }
     })
     revalidatePath("/master/products")
     revalidatePath(`/master/products/${parsed.id}`)

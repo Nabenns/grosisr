@@ -6,7 +6,13 @@ export default defineConfig({
     globals: true,
     environment: "node",
     setupFiles: [],
+    server: { deps: { inline: ["next-auth"] } },
     coverage: { provider: "v8", reporter: ["text", "html"] }
   },
-  resolve: { alias: { "@": path.resolve(__dirname, "./src") } }
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      "next/server": path.resolve(__dirname, "./node_modules/next/server.js")
+    }
+  }
 })

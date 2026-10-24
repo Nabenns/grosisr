@@ -23,7 +23,7 @@ export function computeDiff(
     const b = after?.[k]
     const aJson = JSON.stringify(a)
     const bJson = JSON.stringify(b)
-    if (aJson !== bJson) diff[k] = [a, b]
+    if (aJson !== bJson) diff[k] = [a ?? null, b ?? null]
   }
   return diff
 }

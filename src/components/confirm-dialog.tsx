@@ -46,7 +46,7 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={(<>{trigger}</>) as never} />
+      <DialogTrigger render={trigger as never} />
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
