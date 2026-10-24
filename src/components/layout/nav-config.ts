@@ -19,6 +19,7 @@ import {
   Shield,
   Store,
   ScrollText,
+  Bell,
   type LucideIcon
 } from "lucide-react"
 
@@ -107,6 +108,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Pengguna", href: "/settings/users", icon: Users, permission: "user.read" },
       { label: "Role", href: "/settings/roles", icon: Shield, permission: "role.write" },
       { label: "Profil Toko", href: "/settings/store", icon: Store, permission: "setting.write" },
+      { label: "Notifikasi", href: "/settings/notifications", icon: Bell, permission: "setting.write" },
       { label: "Activity Log", href: "/settings/audit-log", icon: ScrollText, permission: "audit.read" },
       { label: "Profil Saya", href: "/settings/profile", icon: UserCircle }
     ]

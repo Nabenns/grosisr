@@ -19,6 +19,25 @@ const StockLiveContext = createContext<StockLiveState>({
 const POLL_MS = 10_000
 
 /**
+ * Never refresh under the user's hands: a refresh mid-typing would wipe form
+ * state, and the POS cart lives entirely in client state.
+ */
+function canRefresh(): boolean {
+  if (typeof document === "undefined") return false
+  if (document.querySelector('[data-slot="dialog-content"]')) return false
+  const el = document.activeElement
+  if (
+    el instanceof HTMLInputElement ||
+    el instanceof HTMLTextAreaElement ||
+    el instanceof HTMLSelectElement ||
+    (el instanceof HTMLElement && el.isContentEditable)
+  ) {
+    return false
+  }
+  return !window.location.pathname.startsWith("/sale/pos")
+}
+
+/**
  * Polls /api/stock/snapshot and refreshes the current route when the stock
  * movement counter changes, so every page reflects stock without a manual
  * reload. Polling (not SSE) keeps server actions responsive and avoids
@@ -45,7 +64,7 @@ export function StockLiveProvider({
       setConnected(true)
       setLowStock(data.lowStock)
       setLastUpdate(Date.now())
-      if (versionRef.current !== null && versionRef.current !== data.movements) {
+      if (versionRef.current !== null && versionRef.current !== data.movements && canRefresh()) {
         router.refresh()
       }
       versionRef.current = data.movements

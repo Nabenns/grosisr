@@ -9,6 +9,7 @@ import { requirePermission } from "@/modules/auth/service"
 import { postSaleSchema, voidSaleSchema } from "./schema"
 import { postSale, voidSale } from "./service"
 import { searchProductsForPOS } from "./queries"
+import { notifyLowStock } from "@/lib/low-stock-alert"
 
 export async function postSaleAction(input: unknown) {
   return action(async () => {
@@ -28,6 +29,14 @@ export async function postSaleAction(input: unknown) {
     })
     revalidatePath("/sale/invoices")
     revalidatePath("/sale/pos")
+
+    // Fire-and-forget: never block or fail a posted sale because of a chat alert.
+    const productUnits = await prisma.productUnit.findMany({
+      where: { id: { in: parsed.items.map((i) => i.productUnitId) } },
+      select: { productId: true }
+    })
+    void notifyLowStock(parsed.warehouseId, [...new Set(productUnits.map((p) => p.productId))])
+
     return {
       id: result.id,
       code: result.code,

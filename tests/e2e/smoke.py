@@ -169,6 +169,8 @@ def main():
         page.wait_for_timeout(200)
         page.locator('button[role="combobox"]').nth(2).click()
         page.wait_for_timeout(300)
+        page.fill('input[placeholder="Cari SKU/nama..."]', sku)
+        page.wait_for_timeout(500)
         page.locator(f'div[role="option"]:visible:has-text("{sku}")').first.click()
         page.wait_for_timeout(200)
         page.locator('input[type="number"]').nth(0).fill("10")
@@ -184,6 +186,22 @@ def main():
             print(f"[WARN] pinv post dialog: {e}")
 
         # 7. POS SALE
+        print("\n=== 6b. NOTIFICATION SETTINGS ===")
+        try:
+            page.goto(f"{BASE}/settings/notifications", wait_until="networkidle")
+            page.wait_for_selector("#telegram_chat_id", timeout=15000)
+            assert page.locator("text=Bot Telegram").first.is_visible(), "telegram card missing"
+            page.fill("#telegram_chat_id", "-1009999999999")
+            page.click('button:has-text("Simpan")')
+            page.wait_for_timeout(1500)
+            body = page.inner_text("body")
+            assert "disimpan" in body or "tersimpan" in body, "save confirmation not shown"
+            page.screenshot(path=f"{SHOTS}/17-notifications.png", full_page=True)
+            print("[ok] notification settings page renders and saves")
+        except Exception as e:
+            print(f"[FAIL] notification settings: {e}")
+            errors.append(f"notification settings: {e}")
+
         print("\n=== 7. POS SALE ===")
         page.goto(f"{BASE}/sale/pos", wait_until="networkidle")
         try:

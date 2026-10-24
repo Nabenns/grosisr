@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { useForm, useFieldArray, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
@@ -8,7 +8,7 @@ import { toast } from "sonner"
 import { Plus, Trash2 } from "lucide-react"
 import Decimal from "decimal.js"
 import { createPInvSchema, type CreatePInvInput } from "../schema"
-import { postPurchaseInvoiceAction } from "../actions"
+import { postPurchaseInvoiceAction, searchProductUnitsAction } from "../actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -124,16 +124,28 @@ export function PInvForm({
   const { fields, append, remove } = useFieldArray({ control, name: "items" })
 
   const productUnitMap = new Map(productUnits.map((pu) => [pu.id, pu]))
-  const filtered =
-    search.length >= 2
-      ? productUnits
-          .filter(
-            (pu) =>
-              pu.productName.toLowerCase().includes(search.toLowerCase()) ||
-              pu.productSku.toLowerCase().includes(search.toLowerCase())
-          )
-          .slice(0, 30)
-      : productUnits.slice(0, 30)
+  const [options, setOptions] = useState<ProductUnitOption[]>(productUnits.slice(0, 30))
+  const [searching, setSearching] = useState(false)
+
+  // Debounced server search: the page only preloads 30 units, so filtering
+  // client-side silently hid products on larger catalogues.
+  useEffect(() => {
+    const q = search.trim()
+    if (q.length < 2) {
+      setOptions(productUnits.slice(0, 30))
+      setSearching(false)
+      return
+    }
+    setSearching(true)
+    const timer = setTimeout(async () => {
+      const result = await searchProductUnitsAction(q)
+      if (result.success) setOptions(result.data)
+      setSearching(false)
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [search, productUnits])
+
+  const filtered = options
 
   const items = watch("items") ?? []
   const subtotalCalc = items.reduce(
@@ -297,6 +309,14 @@ export function PInvForm({
                               onClick={(e) => e.stopPropagation()}
                             />
                           </div>
+                          {searching && (
+                            <div className="px-2 py-1.5 text-xs text-muted-foreground">Mencari...</div>
+                          )}
+                          {!searching && filtered.length === 0 && (
+                            <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                              Produk tidak ditemukan
+                            </div>
+                          )}
                           {filtered.map((pu) => (
                             <SelectItem key={pu.id} value={pu.id}>
                               {pu.productSku} - {pu.productName} ({pu.unitName})

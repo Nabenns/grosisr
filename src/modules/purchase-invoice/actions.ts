@@ -8,6 +8,7 @@ import { audit } from "@/lib/audit"
 import { requirePermission } from "@/modules/auth/service"
 import { createPInvSchema, voidPInvSchema } from "./schema"
 import { postPurchaseInvoice, voidPurchaseInvoice } from "./service"
+import { listProductUnitsForPicker } from "@/modules/purchase-order/queries"
 
 export async function postPurchaseInvoiceAction(input: unknown) {
   return action(async () => {
@@ -50,5 +51,14 @@ export async function voidPurchaseInvoiceAction(input: unknown) {
     revalidatePath("/purchase/invoices")
     revalidatePath(`/purchase/invoices/${parsed.id}`)
     return result
+  })
+}
+
+/** Server-side product search for the invoice line picker (the initial page
+ * only ships the first 30 units, so typing must query the database). */
+export async function searchProductUnitsAction(q: string) {
+  return action(async () => {
+    await requirePermission("purchase.invoice.write")
+    return listProductUnitsForPicker(q, 30)
   })
 }
