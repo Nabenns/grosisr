@@ -103,7 +103,6 @@ export function ProductForm({ categories, brands, units, initial }: Props) {
       }
       toast.success(initial ? "Produk diperbarui" : "Produk dibuat")
       router.push("/master/products" as never)
-      router.refresh()
     })
   }
 
