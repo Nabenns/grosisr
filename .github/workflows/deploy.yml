@@ -46,16 +46,14 @@ jobs:
         with:
           host: ${{ secrets.VPS_HOST || '103.253.213.178' }}
           username: ${{ secrets.VPS_USER || 'root' }}
-          password: ${{ secrets.VPS_PASSWORD }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           script_stop: true
           script: |
             set -e
             cd /root/grosisr-prod
-            if [ -d .git ]; then
-              git fetch origin master
-              git reset --hard origin/master
-            fi
+            git fetch origin master
+            git reset --hard origin/master
             docker compose -f docker-compose.prod.yml --env-file .env.production build
             docker compose -f docker-compose.prod.yml --env-file .env.production up -d
             echo "Waiting for app container healthy..."
