@@ -286,6 +286,35 @@ def main():
             print(f"[FAIL] profit-loss: {e}")
             errors.append(f"profit-loss: {e}")
 
+        # 9. AUDIT LOG
+        print("\n=== 9. AUDIT LOG ===")
+        try:
+            page.goto(f"{BASE}/settings/audit-log", wait_until="networkidle")
+            page.wait_for_timeout(800)
+            rows = page.locator("tbody tr").count()
+            assert rows > 0, "audit log table is empty"
+            labels = [t.strip() for t in page.locator('button[role="combobox"]').all_inner_texts()]
+            assert any("Semua Entity" in t for t in labels), f"entity filter label wrong: {labels}"
+            page.locator('tbody tr button:has-text("field")').first.click()
+            page.wait_for_timeout(600)
+            dialog = page.locator('[data-slot="dialog-content"]').first.inner_text()
+            assert "Detail perubahan" in dialog, f"diff dialog missing: {dialog[:80]}"
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(300)
+
+            page.goto(f"{BASE}/settings/audit-log?action=UPDATE", wait_until="networkidle")
+            filtered = page.locator("tbody tr").count()
+            assert "action=UPDATE" in page.url, "action filter not applied"
+            csv = page.request.get(f"{BASE}/settings/audit-log/export?action=UPDATE")
+            assert csv.status == 200, f"csv export status {csv.status}"
+            assert "text/csv" in (csv.headers.get("content-type") or ""), "csv content-type wrong"
+            assert "entity_id" in csv.text(), "csv header missing"
+            shot(page, "19-audit-log")
+            print(f"[ok] audit log: {rows} rows, diff dialog, action filter ({filtered} rows), csv export")
+        except Exception as e:
+            print(f"[FAIL] audit log: {e}")
+            errors.append(f"audit log: {e}")
+
         print(f"\n=== SUMMARY: {len(errors)} errors ===")
         for e in errors:
             print(f"  - {e}")
