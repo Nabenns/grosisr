@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import Decimal from "decimal.js"
-import { Trash2, Search, Plus, Minus, CreditCard, QrCode, Banknote, DollarSign, Loader2 } from "lucide-react"
+import { Trash2, Search, Plus, Minus, CreditCard, QrCode, Banknote, DollarSign, Loader2, ScanBarcode } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { formatIDR } from "@/lib/money"
 import { searchPOSProductsAction, postSaleAction } from "../actions"
+import { BarcodeScanner } from "./barcode-scanner"
 
 interface CustomerOption {
   id: string
@@ -68,6 +69,7 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
   const [search, setSearch] = useState("")
   const [results, setResults] = useState<SearchResult[]>([])
   const [showResults, setShowResults] = useState(false)
+  const [scannerOpen, setScannerOpen] = useState(false)
   const [cart, setCart] = useState<CartItem[]>([])
   const [customerId, setCustomerId] = useState<string>(
     customers.find((c) => c.code === "CUS-WALKIN")?.id ?? ""
@@ -110,6 +112,9 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
       if (e.key === "F2") {
         e.preventDefault()
         searchInputRef.current?.focus()
+      } else if (e.key === "F1") {
+        e.preventDefault()
+        setScannerOpen(true)
       } else if (e.key === "F8") {
         e.preventDefault()
         if (saleType === "CASH") paymentInputRef.current?.focus()
@@ -122,7 +127,7 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
     return () => window.removeEventListener("keydown", onKey)
   }, [showResults, cart.length, saleType])
 
-  async function handleSearch(q: string) {
+  async function handleSearch(q: string, fromScan = false) {
     setSearch(q)
     if (q.length < 2) {
       setResults([])
@@ -133,9 +138,14 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
     if (!r.success) return
     setResults(r.data)
     setShowResults(true)
-    // Auto-add if exact barcode hit (single result)
-    if (r.data.length === 1 && r.data[0] && /^\d{8,}$/.test(q)) {
-      addToCart(r.data[0])
+    // Auto-add when the query is an unambiguous exact hit (barcode scan, 8+ digit code, or exact SKU)
+    const hit = r.data[0]
+    if (
+      r.data.length === 1 &&
+      hit &&
+      (fromScan || /^\d{8,}$/.test(q.trim()) || hit.sku.toLowerCase() === q.trim().toLowerCase())
+    ) {
+      addToCart(hit)
       setSearch("")
       setResults([])
       setShowResults(false)
@@ -240,14 +250,26 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
             <div className="text-xs text-muted-foreground">F2</div>
           </CardHeader>
           <CardContent className="pt-0 relative">
-            <Input
-              ref={searchInputRef}
-              autoFocus
-              value={search}
-              onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Ketik SKU / nama produk, atau scan barcode..."
-              className="mt-2 max-w-md"
-            />
+            <div className="mt-2 flex items-center gap-2 max-w-xl">
+              <Input
+                ref={searchInputRef}
+                autoFocus
+                value={search}
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder="Ketik SKU / nama produk, atau scan barcode..."
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                data-testid="scan-barcode"
+                onClick={() => setScannerOpen(true)}
+                title="Scan barcode dengan kamera (F1)"
+              >
+                <ScanBarcode className="h-4 w-4 mr-1" />
+                Scan
+              </Button>
+            </div>
             {showResults && results.length > 0 && (
               <div className="absolute left-0 right-0 top-full mt-1 mx-6 bg-popover border rounded-md shadow-2xl max-h-96 overflow-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                 {results.map((r) => (
@@ -597,7 +619,7 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
         <DialogContent className="sm:max-w-md text-center">
           <DialogHeader>
             <DialogTitle>Penjualan Berhasil</DialogTitle>
-            <DialogDescription>
+            <DialogDescription render={<div />}>
               {resultModal && (
                 <div className="space-y-2 mt-4">
                   <div className="flex justify-between">
@@ -642,6 +664,12 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BarcodeScanner
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onDetected={(code) => handleSearch(code, true)}
+      />
     </div>
   )
 }

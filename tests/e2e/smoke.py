@@ -154,15 +154,26 @@ def main():
         # 7. POS SALE
         print("\n=== 7. POS SALE ===")
         page.goto(f"{BASE}/sale/pos", wait_until="networkidle")
+        try:
+            page.locator('[data-testid="scan-barcode"]').wait_for(state="visible", timeout=10000)
+            print("[ok] barcode scan button visible")
+        except Exception as e:
+            print(f"[FAIL] scan button: {e}")
+            errors.append(f"scan button: {e}")
         page.locator('input[placeholder*="SKU"]').fill(sku)
         page.wait_for_timeout(800)
         shot(page, "12-pos-search")
         try:
-            page.locator(f'button:has-text("{sku}")').first.click()
+            page.locator(f'button:has-text("{sku}")').first.click(timeout=3000)
             page.wait_for_timeout(300)
-            print("[ok] added to cart")
-        except Exception as e:
-            print(f"[WARN] add cart: {e}")
+            print("[ok] added to cart (click)")
+        except Exception:
+            # Exact SKU / barcode queries auto-add and clear the result list
+            if page.locator(f'text={sku}').count() > 0:
+                print("[ok] added to cart (auto-add on exact SKU)")
+            else:
+                print("[FAIL] add cart: no result row and no auto-add")
+                errors.append("add cart: item missing")
         try:
             page.locator("input#paidAmount").fill("20000")
             page.wait_for_timeout(200)
@@ -173,6 +184,24 @@ def main():
         except Exception as e:
             print(f"[FAIL] sale: {e}")
             errors.append(str(e))
+
+        # 7b. RECEIPT (struk) — opens in a new tab, must be printable standalone (no sidebar)
+        print("\n=== 7b. RECEIPT ===")
+        try:
+            with page.expect_popup(timeout=15000) as popup_info:
+                page.locator('[data-slot="dialog-content"] button:has-text("Cetak Struk")').click()
+            receipt = popup_info.value
+            receipt.wait_for_load_state("networkidle")
+            body = receipt.inner_text("body")
+            assert "TOTAL" in body, "receipt missing TOTAL"
+            assert sku in body, "receipt missing SKU"
+            assert receipt.locator("aside").count() == 0, "receipt rendered with dashboard sidebar"
+            shot(receipt, "15b-receipt")
+            print(f"[ok] receipt {receipt.url} standalone, TOTAL+SKU present")
+            receipt.close()
+        except Exception as e:
+            print(f"[FAIL] receipt: {e}")
+            errors.append(f"receipt: {e}")
 
         # 8. STOCK
         print("\n=== 8. STOCK CHECK ===")
