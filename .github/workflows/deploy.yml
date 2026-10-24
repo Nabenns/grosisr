@@ -57,7 +57,22 @@ jobs:
             docker compose -f docker-compose.prod.yml --env-file .env.production build
             docker compose -f docker-compose.prod.yml --env-file .env.production up -d
             echo "Waiting for app container healthy..."
-            sleep 5
+            for i in $(seq 1 40); do
+              status=$(docker inspect --format '{{.State.Health.Status}}' grosisr-prod-app-1 2>/dev/null || echo "missing")
+              echo "health[$i]: $status"
+              if [ "$status" = "healthy" ]; then break; fi
+              sleep 3
+            done
             docker compose -f docker-compose.prod.yml --env-file .env.production ps
-            curl -fsS -o /dev/null http://127.0.0.1:3002/api/auth/session || exit 1
+            ok=0
+            for i in $(seq 1 20); do
+              if curl -fsS -o /dev/null http://127.0.0.1:3002/api/auth/session; then ok=1; break; fi
+              echo "probe[$i]: app not reachable yet"
+              sleep 3
+            done
+            if [ "$ok" != "1" ]; then
+              echo "App did not become reachable within 60s"
+              docker logs --tail 60 grosisr-prod-app-1 || true
+              exit 1
+            fi
             echo "Deployment successful!"
