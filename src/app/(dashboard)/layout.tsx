@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Topbar } from "@/components/layout/topbar"
+import { StockLiveProvider } from "@/components/realtime/stock-live"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -29,18 +30,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
     cookieStore.get("current_warehouse")?.value ?? session.user.defaultWarehouseId ?? userWarehouses[0]?.id ?? null
 
   return (
-    <div className="flex">
-      <Sidebar permissionKeys={session.user.permissionKeys} />
-      <div className="flex-1 min-h-screen flex flex-col">
-        <Topbar
-          userName={session.user.name ?? ""}
-          username={session.user.username}
-          warehouses={userWarehouses}
-          currentWarehouseId={currentWarehouseId}
-          lowStockCount={lowStockCount}
-        />
-        <main className="flex-1 p-6">{children}</main>
+    <StockLiveProvider initialLowStock={lowStockCount}>
+      <div className="flex">
+        <Sidebar permissionKeys={session.user.permissionKeys} />
+        <div className="flex-1 min-h-screen flex flex-col">
+          <Topbar
+            userName={session.user.name ?? ""}
+            username={session.user.username}
+            warehouses={userWarehouses}
+            currentWarehouseId={currentWarehouseId}
+            lowStockCount={lowStockCount}
+          />
+          <main className="flex-1 p-6">{children}</main>
+        </div>
       </div>
-    </div>
+    </StockLiveProvider>
   )
 }

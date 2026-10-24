@@ -66,6 +66,38 @@ def main():
         print(f"[ok] {len(links)} sidebar links: {', '.join(links)}")
 
         # 3. CATEGORY
+        print("\n=== 2b. STOCK SNAPSHOT API ===")
+        try:
+            snap = page.evaluate(
+                """async () => {
+                    const r = await fetch('/api/stock/snapshot', { cache: 'no-store' });
+                    if (!r.ok) return { ok: false, status: r.status };
+                    return { ok: true, data: await r.json() };
+                }"""
+            )
+            assert snap.get("ok"), f"snapshot failed: {snap}"
+            data = snap["data"]
+            assert isinstance(data.get("lowStock"), int), f"bad payload: {data}"
+            assert isinstance(data.get("movements"), int), f"bad payload: {data}"
+            print(f"[ok] snapshot lowStock={data['lowStock']} movements={data['movements']}")
+        except Exception as e:
+            print(f"[FAIL] snapshot: {e}")
+            errors.append(f"snapshot: {e}")
+
+        print("\n=== 2c. REALTIME BADGE ===")
+        try:
+            page.click('button[aria-label="Notifikasi"]')
+            page.wait_for_timeout(1500)
+            body = page.inner_text("body")
+            assert "live" in body, "notification dropdown does not report live connection"
+            print("[ok] notification badge reports live stream")
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(300)
+        except Exception as e:
+            print(f"[FAIL] realtime badge: {e}")
+            errors.append(f"realtime badge: {e}")
+
+
         print("\n=== 3. CATEGORY ===")
         cat_name = f"E2E Cat {SUFFIX}"
         page.goto(f"{BASE}/master/categories/new", wait_until="networkidle")

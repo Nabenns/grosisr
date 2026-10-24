@@ -77,7 +77,7 @@ export default async function StockPage({
     <div>
       <PageHeader
         title="Saldo Stok"
-        description="Ringkasan saldo stok per gudang. Pergerakan stok aktif di milestone berikutnya (M2)."
+        description="Ringkasan saldo stok per gudang — otomatis diperbarui saat ada pergerakan stok."
       />
       <DataTable columns={columns} data={rows} emptyMessage="Belum ada saldo stok" />
       <Pagination total={total} page={page} pageSize={pageSize} />

@@ -27,6 +27,7 @@ import {
 import { WarehouseSwitcher } from "./warehouse-switcher"
 import { UserMenu } from "./user-menu"
 import { ThemeToggle } from "./theme-toggle"
+import { useStockLive } from "@/components/realtime/stock-live"
 
 interface Props {
   userName: string
@@ -54,6 +55,8 @@ export function Topbar({
   lowStockCount
 }: Props) {
   const router = useRouter()
+  const { lowStock, connected } = useStockLive()
+  const liveLowStock = lowStock ?? lowStockCount
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState("")
   const [focused, setFocused] = useState(false)
@@ -148,25 +151,36 @@ export function Topbar({
             render={
               <Button variant="outline" size="icon" aria-label="Notifikasi" className="relative">
                 <Bell className="h-4 w-4" />
-                {lowStockCount > 0 && (
+                {liveLowStock > 0 && (
                   <span className="absolute -right-1 -top-1 h-4 min-w-4 px-0.5 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center border-2 border-card">
-                    {lowStockCount > 9 ? "9+" : lowStockCount}
+                    {liveLowStock > 9 ? "9+" : liveLowStock}
                   </span>
                 )}
               </Button>
             }
           />
           <DropdownMenuContent align="end" className="w-64">
-            <DropdownMenuLabel>Notifikasi</DropdownMenuLabel>
+            <DropdownMenuLabel className="flex items-center justify-between gap-2">
+              <span>Notifikasi</span>
+              <span
+                title={connected ? "Realtime aktif" : "Realtime terputus"}
+                className="flex items-center gap-1 text-[10px] font-normal text-muted-foreground"
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-muted-foreground/40"}`}
+                />
+                {connected ? "live" : "offline"}
+              </span>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {lowStockCount > 0 ? (
+            {liveLowStock > 0 ? (
               <DropdownMenuItem
                 onClick={() => router.push("/inventory/stock" as never)}
                 className="gap-2.5 py-2.5"
               >
                 <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />
                 <span className="text-xs">
-                  <strong>{lowStockCount} produk</strong> di bawah stok minimum
+                  <strong>{liveLowStock} produk</strong> di bawah stok minimum
                 </span>
               </DropdownMenuItem>
             ) : (
