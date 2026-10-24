@@ -1,12 +1,23 @@
 import { prisma } from "@/lib/db"
+import type { Prisma } from "@prisma/client"
+import { orderByFrom } from "@/lib/sort"
 
 export interface WarehouseListParams {
   q?: string
   page?: number
   pageSize?: number
+  sortBy?: string
+  sortDir?: "asc" | "desc"
 }
 
-export async function listWarehouses({ q, page = 1, pageSize = 25 }: WarehouseListParams) {
+const SORT_COLUMNS: Record<string, (dir: "asc" | "desc") => Prisma.WarehouseOrderByWithRelationInput> = {
+  code: (dir) => ({ code: dir }),
+  name: (dir) => ({ name: dir }),
+  isDefault: (dir) => ({ isDefault: dir }),
+  isActive: (dir) => ({ isActive: dir })
+}
+
+export async function listWarehouses({ q, page = 1, pageSize = 25, sortBy, sortDir }: WarehouseListParams) {
   const where = {
     deletedAt: null,
     ...(q
@@ -18,10 +29,11 @@ export async function listWarehouses({ q, page = 1, pageSize = 25 }: WarehouseLi
         }
       : {})
   }
+  const orderBy = orderByFrom(sortBy, sortDir, SORT_COLUMNS, { name: "asc" })
   const [items, total] = await Promise.all([
     prisma.warehouse.findMany({
       where,
-      orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+      orderBy: sortBy ? orderBy : [{ isDefault: "desc" }, { name: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize
     }),

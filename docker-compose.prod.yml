@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: grosir
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_DB: grosir_prod
+    volumes:
+      - grosir-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U grosir -d grosir_prod"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://grosir:${DB_PASSWORD}@postgres:5432/grosir_prod?schema=public
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?NEXTAUTH_SECRET is required}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-https://employ.srvbenss.cloud}
+      AUTH_TRUST_HOST: "true"
+      PORT: 3000
+    ports:
+      - "127.0.0.1:3002:3000"
+
+volumes:
+  grosir-pgdata:

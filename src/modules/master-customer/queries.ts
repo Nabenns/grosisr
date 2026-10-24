@@ -1,12 +1,23 @@
 import { prisma } from "@/lib/db"
+import type { Prisma } from "@prisma/client"
+import { orderByFrom } from "@/lib/sort"
 
 export interface CustomerListParams {
   q?: string
   page?: number
   pageSize?: number
+  sortBy?: string
+  sortDir?: "asc" | "desc"
 }
 
-export async function listCustomers({ q, page = 1, pageSize = 25 }: CustomerListParams) {
+const SORT_COLUMNS: Record<string, (dir: "asc" | "desc") => Prisma.CustomerOrderByWithRelationInput> = {
+  code: (dir) => ({ code: dir }),
+  name: (dir) => ({ name: dir }),
+  customerType: (dir) => ({ customerType: dir }),
+  isActive: (dir) => ({ isActive: dir })
+}
+
+export async function listCustomers({ q, page = 1, pageSize = 25, sortBy, sortDir }: CustomerListParams) {
   const where = {
     deletedAt: null,
     ...(q
@@ -19,10 +30,11 @@ export async function listCustomers({ q, page = 1, pageSize = 25 }: CustomerList
         }
       : {})
   }
+  const orderBy = orderByFrom(sortBy, sortDir, SORT_COLUMNS, { name: "asc" })
   const [items, total] = await Promise.all([
     prisma.customer.findMany({
       where,
-      orderBy: { name: "asc" },
+      orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize
     }),

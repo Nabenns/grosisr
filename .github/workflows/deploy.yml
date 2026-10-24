@@ -1,0 +1,65 @@
+name: Deploy to Production (employ.srvbenss.cloud)
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  typecheck:
+    name: Typecheck & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm exec prisma generate
+
+      - name: Typecheck
+        run: pnpm tsc --noEmit
+
+  deploy:
+    name: Deploy to VPS
+    needs: typecheck
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST || '103.253.213.178' }}
+          username: ${{ secrets.VPS_USER || 'root' }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
+          script_stop: true
+          script: |
+            set -e
+            cd /root/grosisr-prod
+            if [ -d .git ]; then
+              git fetch origin master
+              git reset --hard origin/master
+            fi
+            docker compose -f docker-compose.prod.yml --env-file .env.production build
+            docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+            echo "Waiting for app container healthy..."
+            sleep 5
+            docker compose -f docker-compose.prod.yml ps
+            curl -fsS -o /dev/null http://127.0.0.1:3002/api/auth/session || exit 1
+            echo "Deployment successful!"

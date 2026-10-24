@@ -1,12 +1,22 @@
 import { prisma } from "@/lib/db"
+import type { Prisma } from "@prisma/client"
+import { orderByFrom } from "@/lib/sort"
 
 export interface SupplierListParams {
   q?: string
   page?: number
   pageSize?: number
+  sortBy?: string
+  sortDir?: "asc" | "desc"
 }
 
-export async function listSuppliers({ q, page = 1, pageSize = 25 }: SupplierListParams) {
+const SORT_COLUMNS: Record<string, (dir: "asc" | "desc") => Prisma.SupplierOrderByWithRelationInput> = {
+  code: (dir) => ({ code: dir }),
+  name: (dir) => ({ name: dir }),
+  isActive: (dir) => ({ isActive: dir })
+}
+
+export async function listSuppliers({ q, page = 1, pageSize = 25, sortBy, sortDir }: SupplierListParams) {
   const where = {
     deletedAt: null,
     ...(q
@@ -19,10 +29,11 @@ export async function listSuppliers({ q, page = 1, pageSize = 25 }: SupplierList
         }
       : {})
   }
+  const orderBy = orderByFrom(sortBy, sortDir, SORT_COLUMNS, { name: "asc" })
   const [items, total] = await Promise.all([
     prisma.supplier.findMany({
       where,
-      orderBy: { name: "asc" },
+      orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize
     }),

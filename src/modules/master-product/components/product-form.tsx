@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { Package, Coins, ShieldCheck, Loader2 } from "lucide-react"
 import { createProductSchema, type CreateProductInput } from "../schema"
 import { createProductAction, updateProductAction } from "../actions"
 import { Button } from "@/components/ui/button"
@@ -110,17 +111,20 @@ export function ProductForm({ categories, brands, units, initial }: Props) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-5xl">
       <Card>
         <CardHeader>
-          <CardTitle>Informasi Dasar</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-4 w-4 text-muted-foreground" />
+            Informasi Dasar
+          </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="sku">SKU *</Label>
-            <Input id="sku" {...register("sku")} />
+            <Input id="sku" placeholder="Mis. IND-MIE-070" {...register("sku")} />
             {errors.sku && <p className="text-sm text-destructive">{errors.sku.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="name">Nama Produk *</Label>
-            <Input id="name" {...register("name")} />
+            <Input id="name" placeholder="Mis. Indomie Goreng Special" {...register("name")} />
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
           <div className="space-y-2">
@@ -187,7 +191,10 @@ export function ProductForm({ categories, brands, units, initial }: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Satuan & Harga</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Coins className="h-4 w-4 text-muted-foreground" />
+            Satuan & Harga
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <ProductUnitsGrid
@@ -203,21 +210,30 @@ export function ProductForm({ categories, brands, units, initial }: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Cukai & HET</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+            Cukai & HET
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-3">
+        <CardContent className="space-y-3">
+          <label className="flex items-center justify-between gap-4 rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors">
+            <span>
+              <span className="block text-sm font-medium">Produk kena cukai</span>
+              <span className="block text-xs text-muted-foreground">Rokok / tembakau — wajib stok cukai per batang</span>
+            </span>
             <Switch checked={watch("hasCukai")} onCheckedChange={(v) => setValue("hasCukai", v)} />
-            <Label>Produk kena cukai</Label>
-          </div>
-          <div className="flex items-center gap-3">
+          </label>
+          <label className="flex items-center justify-between gap-4 rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors">
+            <span>
+              <span className="block text-sm font-medium">Punya HET</span>
+              <span className="block text-xs text-muted-foreground">Harga Eceran Tertinggi dari pemerintah</span>
+            </span>
             <Switch checked={hasHet} onCheckedChange={(v) => setValue("hasHet", v)} />
-            <Label>Punya HET</Label>
-          </div>
+          </label>
           {hasHet && (
-            <div className="space-y-2 max-w-xs">
+            <div className="space-y-2 max-w-xs pl-3 border-l-2 border-primary/30">
               <Label htmlFor="hetPrice">HET (per base unit) *</Label>
-              <Input id="hetPrice" type="number" step="1" {...register("hetPrice", { valueAsNumber: true })} />
+              <Input id="hetPrice" type="number" step="1" placeholder="Mis. 14000" {...register("hetPrice", { valueAsNumber: true })} />
               {errors.hetPrice && <p className="text-sm text-destructive">{errors.hetPrice.message}</p>}
               <p className="text-xs text-muted-foreground">
                 Harga jual semua satuan otomatis dicek vs HET (kecuali kamu punya permission override)
@@ -227,9 +243,10 @@ export function ProductForm({ categories, brands, units, initial }: Props) {
         </CardContent>
       </Card>
 
-      <div className="flex gap-2">
+      <div className="sticky bottom-0 -mx-6 mt-8 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 py-4 px-6 flex items-center gap-2">
         <Button type="submit" disabled={pending}>
-          {pending ? "Menyimpan..." : "Simpan"}
+          {pending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          {pending ? "Menyimpan..." : "Simpan Produk"}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>
           Batal

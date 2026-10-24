@@ -20,6 +20,7 @@ declare module "next-auth" {
 }
 
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60, updateAge: 60 * 60 },
   pages: { signIn: "/login" },
   providers: [

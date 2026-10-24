@@ -131,6 +131,33 @@ export async function listSaleInvoices(params: {
   return { items, total, page, pageSize }
 }
 
+export async function getSalesReport({ dateFrom, dateTo }: { dateFrom: Date; dateTo: Date }) {
+  const to = new Date(dateTo)
+  to.setHours(23, 59, 59, 999)
+  const invoices = await prisma.saleInvoice.findMany({
+    where: { invoiceDate: { gte: dateFrom, lte: to }, status: { not: "VOID" } },
+    select: { id: true, code: true, invoiceDate: true, total: true, paidAmount: true, saleType: true, paymentMethod: true },
+    orderBy: { invoiceDate: "asc" }
+  })
+  const byDate: Record<string, { count: number; total: number }> = {}
+  invoices.forEach((inv) => {
+    const key = inv.invoiceDate.toISOString().slice(0, 10)
+    if (!byDate[key]) byDate[key] = { count: 0, total: 0 }
+    byDate[key].count += 1
+    byDate[key].total += Number(inv.total)
+  })
+  const items = Object.entries(byDate).map(([date, v]) => ({ date, ...v }))
+  const summary = invoices.reduce(
+    (acc, inv) => ({
+      count: acc.count + 1,
+      total: acc.total + Number(inv.total),
+      cash: acc.cash + Number(inv.paidAmount)
+    }),
+    { count: 0, total: 0, cash: 0 }
+  )
+  return { items, summary }
+}
+
 export async function getSaleInvoiceById(id: string) {
   return prisma.saleInvoice.findUnique({
     where: { id },

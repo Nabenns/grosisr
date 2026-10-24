@@ -10,11 +10,18 @@ interface Props {
 
 export function EmptyState({ title, description, action, icon }: Props) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="text-muted-foreground mb-3">{icon ?? <Package className="h-10 w-10" />}</div>
-      <h3 className="font-semibold">{title}</h3>
-      {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
-      {action && <div className="mt-4">{action}</div>}
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="relative inline-block mb-4">
+        <div className="absolute -inset-2 rounded-full bg-primary/10 blur-lg" />
+        <div className="relative rounded-full bg-primary/10 ring-1 ring-primary/20 p-3 [&>svg]:h-7 [&>svg]:w-7 [&>svg]:text-primary">
+          {icon ?? <Package />}
+        </div>
+      </div>
+      <h3 className="font-semibold text-base">{title}</h3>
+      {description && (
+        <p className="text-sm text-muted-foreground mt-1.5 max-w-[360px] leading-relaxed">{description}</p>
+      )}
+      {action && <div className="mt-6">{action}</div>}
     </div>
   )
 }

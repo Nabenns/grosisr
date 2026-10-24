@@ -4,12 +4,12 @@ import { useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import Decimal from "decimal.js"
-import { Trash2, X } from "lucide-react"
+import { Trash2, Search, Plus, Minus, CreditCard, QrCode, Banknote, DollarSign, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -61,6 +61,7 @@ interface Props {
 function genIdempotencyKey(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
+
 export function POSCart({ warehouseId, warehouseName, customers, userPermissions }: Props) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -97,13 +98,11 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
   const canEditPrice = canDiscount
 
   const subtotal = cart.reduce(
-    (acc, i) =>
-      acc.plus(new Decimal(i.qty).times(i.price).minus(new Decimal(i.qty).times(i.discount))),
+    (acc, i) => acc.plus(new Decimal(i.qty).times(i.price).minus(new Decimal(i.qty).times(i.discount))),
     new Decimal(0)
   )
   const total = subtotal.minus(new Decimal(discountAmount))
-  const change =
-    saleType === "CASH" ? Decimal.max(0, new Decimal(paidAmount).minus(total)) : new Decimal(0)
+  const change = saleType === "CASH" ? Decimal.max(0, new Decimal(paidAmount).minus(total)) : new Decimal(0)
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -134,16 +133,12 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
     if (!r.success) return
     setResults(r.data)
     setShowResults(true)
-    // Auto-add if exact barcode hit (single result with matching unique attributes)
-    if (r.data.length === 1 && r.data[0]) {
-      const found = r.data[0]
-      // Heuristic: if input is all digits and >= 8 chars, likely a barcode scan
-      if (/^\d{8,}$/.test(q)) {
-        addToCart(found)
-        setSearch("")
-        setResults([])
-        setShowResults(false)
-      }
+    // Auto-add if exact barcode hit (single result)
+    if (r.data.length === 1 && r.data[0] && /^\d{8,}$/.test(q)) {
+      addToCart(r.data[0])
+      setSearch("")
+      setResults([])
+      setShowResults(false)
     }
   }
 
@@ -229,29 +224,37 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
       idempotencyRef.current = genIdempotencyKey()
     })
   }
+
+  const QUICK_PAY_AMOUNTS = [25000, 50000, 100000, 200000, 500000]
+
   return (
     <div className="grid grid-cols-12 gap-4 h-[calc(100vh-9rem)]">
       {/* LEFT: search + cart */}
       <div className="col-span-7 flex flex-col gap-4">
         <Card>
-          <CardContent className="pt-6 relative">
-            <Label htmlFor="search">Cari produk (F2) - SKU, nama, atau scan barcode</Label>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              Cari Produk
+            </CardTitle>
+            <div className="text-xs text-muted-foreground">F2</div>
+          </CardHeader>
+          <CardContent className="pt-0 relative">
             <Input
               ref={searchInputRef}
-              id="search"
               autoFocus
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Ketik atau scan barcode..."
-              className="mt-2"
+              placeholder="Ketik SKU / nama produk, atau scan barcode..."
+              className="mt-2 max-w-md"
             />
             {showResults && results.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1 mx-6 bg-popover border rounded-md shadow-lg max-h-80 overflow-auto z-10">
+              <div className="absolute left-0 right-0 top-full mt-1 mx-6 bg-popover border rounded-md shadow-2xl max-h-96 overflow-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                 {results.map((r) => (
                   <button
                     key={r.productUnitId}
                     type="button"
-                    className="w-full text-left px-3 py-2 hover:bg-accent flex justify-between items-center text-sm"
+                    className="w-full text-left px-4 py-3 hover:bg-accent border-b border-border flex justify-between items-center text-sm transition-colors"
                     onClick={() => {
                       addToCart(r)
                       setSearch("")
@@ -260,14 +263,12 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
                     }}
                   >
                     <div>
-                      <div className="font-medium">
-                        {r.sku} - {r.name}
-                      </div>
+                      <div className="font-medium">{r.sku} - {r.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        {r.unitName} - Stok: {r.stockBalance}
+                        {r.unitName} &bull; Stok {r.stockBalance}
                       </div>
                     </div>
-                    <div className="text-sm font-semibold">{formatIDR(r.salePrice)}</div>
+                    <div className="font-semibold text-right w-24">{formatIDR(r.salePrice)}</div>
                   </button>
                 ))}
               </div>
@@ -276,48 +277,80 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
         </Card>
 
         <Card className="flex-1 overflow-hidden">
-          <CardContent className="pt-6 h-full flex flex-col">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              Keranjang
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 h-full flex flex-col">
             {cart.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-                Cart kosong. Cari produk untuk menambah.
+              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground space-y-2">
+                <div className="text-xl opacity-50">🛒</div>
+                <div>Cart kosong. Cari produk untuk menambah.</div>
+                <div className="text-xs opacity-60">Ketik atau scan barcode, lalu Enter.</div>
               </div>
             ) : (
               <div className="flex-1 overflow-auto">
                 <table className="w-full text-sm">
-                  <thead className="text-left border-b sticky top-0 bg-background">
+                  <thead className="text-left border-b border-border sticky top-0 bg-background/95 backdrop-blur-sm">
                     <tr>
-                      <th className="pb-2">#</th>
-                      <th>Produk</th>
-                      <th>Qty</th>
-                      <th>Harga</th>
-                      <th>Disc/unit</th>
-                      <th>Subtotal</th>
-                      <th></th>
+                      <th className="pb-2 w-6 text-center">#</th>
+                      <th className="pb-2 pl-2">Produk</th>
+                      <th className="pb-2 w-20 text-right">Qty</th>
+                      <th className="pb-2 w-32 text-right">Harga</th>
+                      <th className="pb-2 w-32 text-right">Disc/unit</th>
+                      <th className="pb-2 w-32 text-right">Subtotal</th>
+                      <th className="pb-2 w-16 text-center"></th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y">
                     {cart.map((item, i) => {
                       const sub = item.qty * (item.price - item.discount)
                       return (
-                        <tr key={i} className="border-b">
-                          <td className="py-2">{i + 1}</td>
-                          <td>
+                        <tr key={i} className="border-b border-border hover:bg-muted/20 transition-colors">
+                          <td className="py-3 pl-2 text-center text-xs text-muted-foreground font-mono">
+                            {i + 1}
+                          </td>
+                          <td className="py-3 pl-2">
                             <div className="font-medium">{item.name}</div>
                             <div className="text-xs text-muted-foreground">
-                              {item.sku} - {item.unitName} - Stok: {item.stockBalance}
+                              {item.sku} &bull; {item.unitName}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">
+                              Stok {item.stockBalance}
                             </div>
                           </td>
-                          <td>
-                            <Input
-                              type="number"
-                              step="0.0001"
-                              min="0"
-                              value={item.qty}
-                              onChange={(e) => updateItem(i, { qty: Number(e.target.value) })}
-                              className="w-20"
-                            />
+                          <td className="py-3 pl-2 w-20 text-right">
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateItem(i, { qty: Math.max(0.0001, item.qty - 1) })
+                                }
+                                disabled={item.qty <= 0.0001}
+                                className="h-6 w-6 rounded border bg-background flex items-center justify-center disabled:opacity-50"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </button>
+                              <Input
+                                type="number"
+                                step="0.0001"
+                                min="0"
+                                value={item.qty}
+                                onChange={(e) => updateItem(i, { qty: Number(e.target.value) })}
+                                className="w-16 text-right h-8 px-2 border-0 focus:ring-0 text-sm font-medium"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => updateItem(i, { qty: item.qty + 1 })}
+                                className="h-6 w-6 rounded border bg-background flex items-center justify-center"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </button>
+                            </div>
                           </td>
-                          <td>
+                          <td className="py-3 pl-2 w-32 text-right">
                             <Input
                               type="number"
                               step="1"
@@ -325,10 +358,10 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
                               disabled={!canEditPrice}
                               value={item.price}
                               onChange={(e) => updateItem(i, { price: Number(e.target.value) })}
-                              className="w-28"
+                              className="w-28 text-right h-8 px-2 border-0 focus:ring-0 text-sm font-medium"
                             />
                           </td>
-                          <td>
+                          <td className="py-3 pl-2 w-32 text-right">
                             <Input
                               type="number"
                               step="1"
@@ -336,18 +369,21 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
                               disabled={!canDiscount}
                               value={item.discount}
                               onChange={(e) => updateItem(i, { discount: Number(e.target.value) })}
-                              className="w-24"
+                              className="w-24 text-right h-8 px-2 border-0 focus:ring-0 text-sm"
                             />
                           </td>
-                          <td className="font-medium">{formatIDR(sub)}</td>
-                          <td>
+                          <td className="py-3 pl-2 w-32 text-right font-medium tabular-nums">
+                            {formatIDR(sub)}
+                          </td>
+                          <td className="py-3 pl-2 w-16 text-center">
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
+                              className="h-8 w-8"
                               onClick={() => removeItem(i)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </td>
                         </tr>
@@ -364,12 +400,18 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
       {/* RIGHT: customer + payment */}
       <div className="col-span-5 flex flex-col gap-4">
         <Card>
-          <CardContent className="pt-6 space-y-3">
-            <div className="text-sm font-medium">{warehouseName}</div>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+              {warehouseName}
+            </CardTitle>
+            <div className="text-xs text-muted-foreground">F4 customer</div>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-4">
             <div className="space-y-2">
-              <Label>Customer (F4)</Label>
+              <Label>Customer</Label>
               <Select value={customerId} onValueChange={(v) => v && setCustomerId(v)}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -383,63 +425,83 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
             </div>
             <div className="space-y-2">
               <Label>Tipe Penjualan</Label>
-              <Select value={saleType} onValueChange={(v) => v && setSaleType(v as "CASH" | "CREDIT")}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CASH">CASH (langsung lunas)</SelectItem>
-                  <SelectItem value="CREDIT">CREDIT (utang)</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant={saleType === "CASH" ? "default" : "outline"}
+                  onClick={() => setSaleType("CASH")}
+                  className="h-10 justify-between"
+                >
+                  CASH
+                  <span className="text-xs text-muted-foreground">langsung lunas</span>
+                </Button>
+                <Button
+                  variant={saleType === "CREDIT" ? "default" : "outline"}
+                  onClick={() => setSaleType("CREDIT")}
+                  className="h-10 justify-between"
+                >
+                  CREDIT
+                  <span className="text-xs text-muted-foreground">utang</span>
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="flex-1">
-          <CardContent className="pt-6 space-y-3">
+          <CardContent className="pt-6 space-y-4">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>{formatIDR(subtotal.toNumber())}</span>
+              <span className="font-medium tabular-nums">{formatIDR(subtotal.toNumber())}</span>
             </div>
-            <div className="flex justify-between items-center text-sm">
-              <Label htmlFor="discountAmount">Diskon Faktur</Label>
-              <Input
-                id="discountAmount"
-                type="number"
-                step="1"
-                min="0"
-                value={discountAmount}
-                onChange={(e) => setDiscountAmount(Number(e.target.value))}
-                disabled={!canDiscount}
-                className="w-32"
-              />
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-sm">
+                <Label htmlFor="discountAmount">Diskon Faktur</Label>
+                <Input
+                  id="discountAmount"
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={discountAmount}
+                  onChange={(e) => setDiscountAmount(Number(e.target.value))}
+                  disabled={!canDiscount}
+                  className="w-32 text-right border-0 focus:ring-0"
+                />
+              </div>
+              {canDiscount && discountAmount > 0 && (
+                <div className="text-[10px] text-destructive ml-auto">
+                  Diskon terpakai
+                </div>
+              )}
             </div>
-            <div className="flex justify-between text-base font-bold border-t pt-2">
-              <span>TOTAL</span>
-              <span>{formatIDR(total.toNumber())}</span>
+            <div className="flex justify-between items-baseline gap-2 border-t pt-3">
+              <span className="text-lg font-bold">TOTAL</span>
+              <span className="text-2xl font-bold text-foreground tabular-nums">
+                {formatIDR(total.toNumber())}
+              </span>
             </div>
 
             {saleType === "CASH" ? (
-              <div className="space-y-3 pt-3 border-t">
+              <div className="space-y-4 pt-3 border-t">
                 <div className="space-y-2">
                   <Label>Metode Pembayaran</Label>
-                  <Select
-                    value={paymentMethod}
-                    onValueChange={(v) =>
-                      v && setPaymentMethod(v as "TUNAI" | "TRANSFER" | "QRIS" | "KARTU")
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="TUNAI">Tunai</SelectItem>
-                      <SelectItem value="TRANSFER">Transfer</SelectItem>
-                      <SelectItem value="QRIS">QRIS</SelectItem>
-                      <SelectItem value="KARTU">Kartu</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: "TUNAI" as const, label: "Tunai", icon: Banknote },
+                      { value: "TRANSFER" as const, label: "Transfer", icon: CreditCard },
+                      { value: "QRIS" as const, label: "QRIS", icon: QrCode },
+                      { value: "KARTU" as const, label: "Kartu", icon: CreditCard }
+                    ].map((m) => (
+                      <Button
+                        key={m.value}
+                        variant={paymentMethod === m.value ? "default" : "outline"}
+                        onClick={() => setPaymentMethod(m.value)}
+                        className="h-12 justify-between flex-col"
+                      >
+                        <m.icon className="h-4 w-4 mb-1" />
+                        {m.label}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
                 {paymentMethod !== "TUNAI" && (
                   <div className="space-y-2">
@@ -461,12 +523,35 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
                     min="0"
                     value={paidAmount}
                     onChange={(e) => setPaidAmount(Number(e.target.value))}
-                    className="text-lg"
+                    className="text-2xl font-bold text-right w-full border-0 focus:ring-0"
                   />
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Kembali</span>
-                  <span className="font-semibold">{formatIDR(change.toNumber())}</span>
+                  <span className="font-semibold tabular-nums">{formatIDR(change.toNumber())}</span>
+                </div>
+                <div className="grid grid-cols-5 gap-1">
+                  {QUICK_PAY_AMOUNTS.map((amt) => (
+                    <Button
+                      key={amt}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setPaidAmount(Number(new Decimal(paidAmount).plus(amt).toNumber()))
+                      }
+                    >
+                      {formatIDR(amt)}
+                    </Button>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setPaidAmount(Number(total.toNumber()))
+                    }
+                  >
+                    Uang Pas
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -498,10 +583,10 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
               type="button"
               onClick={checkout}
               disabled={pending || cart.length === 0}
-              className="w-full"
-              size="lg"
+              className="w-full h-12 font-bold"
             >
-              {pending ? "Memproses..." : "Bayar (F8)"}
+              {pending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {pending ? "Memproses..." : "BAYAR (F8)"}
             </Button>
           </CardContent>
         </Card>
@@ -509,19 +594,33 @@ export function POSCart({ warehouseId, warehouseName, customers, userPermissions
 
       {/* Result modal */}
       <Dialog open={!!resultModal} onOpenChange={(open) => !open && setResultModal(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md text-center">
           <DialogHeader>
-            <DialogTitle>Penjualan berhasil</DialogTitle>
+            <DialogTitle>Penjualan Berhasil</DialogTitle>
             <DialogDescription>
               {resultModal && (
-                <>
-                  {resultModal.code} - Total: {formatIDR(resultModal.total)} - Bayar:{" "}
-                  {formatIDR(resultModal.paid)} - Kembali: {formatIDR(resultModal.change)}
-                </>
+                <div className="space-y-2 mt-4">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Invoice</span>
+                    <span className="font-medium">{resultModal.code}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold tabular-nums">
+                    <span>Total</span>
+                    <span>{formatIDR(resultModal.total)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold tabular-nums">
+                    <span>Bayar</span>
+                    <span>{formatIDR(resultModal.paid)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold text-emerald-600 tabular-nums">
+                    <span>Kembali</span>
+                    <span>{formatIDR(resultModal.change)}</span>
+                  </div>
+                </div>
               )}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2">
+          <DialogFooter className="gap-2 justify-center">
             <Button
               variant="outline"
               onClick={() => {

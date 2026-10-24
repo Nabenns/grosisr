@@ -16,12 +16,14 @@ export default auth((req) => {
 
   if (isApiAuth) return NextResponse.next()
   if (!isLogged && !isLoginPage) {
-    const url = new URL("/login", req.url)
-    url.searchParams.set("from", path)
-    return NextResponse.redirect(url)
+    // Relative redirect keeps the host the visitor actually used
+    // (behind a tunnel/reverse-proxy `req.url` can be `http://localhost:3001`).
+    return NextResponse.redirect(
+      new URL(`/login?from=${encodeURIComponent(path)}`, req.nextUrl.origin)
+    )
   }
   if (isLogged && isLoginPage) {
-    return NextResponse.redirect(new URL("/", req.url))
+    return NextResponse.redirect(new URL("/", req.nextUrl.origin))
   }
   return NextResponse.next()
 })

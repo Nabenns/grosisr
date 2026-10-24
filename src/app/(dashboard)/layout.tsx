@@ -15,6 +15,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
     orderBy: { name: "asc" }
   })
 
+  const lowStock = await prisma.$queryRaw<{ count: bigint }[]>`
+    SELECT COUNT(*) as count
+    FROM "StockBalance" sb
+    JOIN "Product" p ON p."id" = sb."productId"
+    WHERE p."deletedAt" IS NULL
+      AND sb."qtyInBase" < COALESCE(sb."minStock", p."minStock")
+  `
+  const lowStockCount = Number(lowStock[0]?.count ?? 0)
+
   const cookieStore = await cookies()
   const currentWarehouseId =
     cookieStore.get("current_warehouse")?.value ?? session.user.defaultWarehouseId ?? userWarehouses[0]?.id ?? null
@@ -28,6 +37,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           username={session.user.username}
           warehouses={userWarehouses}
           currentWarehouseId={currentWarehouseId}
+          lowStockCount={lowStockCount}
         />
         <main className="flex-1 p-6">{children}</main>
       </div>

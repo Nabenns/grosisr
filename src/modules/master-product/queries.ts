@@ -1,4 +1,14 @@
 import { prisma } from "@/lib/db"
+import type { Prisma } from "@prisma/client"
+import { orderByFrom } from "@/lib/sort"
+
+const SORT_COLUMNS: Record<string, (dir: "asc" | "desc") => Prisma.ProductOrderByWithRelationInput> = {
+  sku: (dir) => ({ sku: dir }),
+  name: (dir) => ({ name: dir }),
+  category: (dir) => ({ category: { name: dir } }),
+  brand: (dir) => ({ brand: { name: dir } }),
+  isActive: (dir) => ({ isActive: dir })
+}
 
 export interface ProductListParams {
   q?: string
@@ -7,10 +17,12 @@ export interface ProductListParams {
   status?: "active" | "inactive" | "all"
   page?: number
   pageSize?: number
+  sortBy?: string
+  sortDir?: "asc" | "desc"
 }
 
 export async function listProducts(params: ProductListParams) {
-  const { q, categoryId, brandId, status = "active", page = 1, pageSize = 25 } = params
+  const { q, categoryId, brandId, status = "active", page = 1, pageSize = 25, sortBy, sortDir = "asc" } = params
   const where: Record<string, unknown> = { deletedAt: null }
   if (status === "active") where.isActive = true
   else if (status === "inactive") where.isActive = false
@@ -23,6 +35,7 @@ export async function listProducts(params: ProductListParams) {
       { units: { some: { barcode: q } } }
     ]
   }
+  const orderBy = orderByFrom(sortBy, sortDir, SORT_COLUMNS, { name: "asc" })
   const [items, total] = await Promise.all([
     prisma.product.findMany({
       where,
@@ -33,7 +46,7 @@ export async function listProducts(params: ProductListParams) {
         units: { include: { unit: { select: { id: true, name: true } } } },
         _count: { select: { stocks: true } }
       },
-      orderBy: { name: "asc" },
+      orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize
     }),

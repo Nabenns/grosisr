@@ -6,6 +6,7 @@ import type { NextAuthConfig } from "next-auth"
  * The full config (with providers) lives in `./auth.ts` and is used by the API route handler.
  */
 export const authConfig = {
+  trustHost: true,
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60, updateAge: 60 * 60 },
   pages: { signIn: "/login" },
   providers: [],
