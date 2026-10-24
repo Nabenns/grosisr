@@ -58,6 +58,6 @@ jobs:
             docker compose -f docker-compose.prod.yml --env-file .env.production up -d
             echo "Waiting for app container healthy..."
             sleep 5
-            docker compose -f docker-compose.prod.yml ps
+            docker compose -f docker-compose.prod.yml --env-file .env.production ps
             curl -fsS -o /dev/null http://127.0.0.1:3002/api/auth/session || exit 1
             echo "Deployment successful!"
